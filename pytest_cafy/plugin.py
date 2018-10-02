@@ -151,6 +151,9 @@ def pytest_addoption(parser):
     group.addoption('--commit-check', dest='commit_check', action='store_true',
                     help='Variable to set commit check option, default is False')
 
+    group.addoption('--enable-live-update', dest='enable_live_update', action='store_true',
+                    help='Variable to enable live logging the status of testcases, default is False')
+
     group = parser.getgroup('Cafykit Debug ')
     group.addoption('--debug-enable', dest='debug_enable', action='store_true',
                     help='Variable to enable cafykit debug, default is False')
@@ -508,50 +511,53 @@ def pytest_collection_modifyitems(session, config, items):
     else:
         CafyLog.first_test = None
 
-    #Send the registration_id to CAFY_API_HOST for live logging
-    CAFY_API_HOST = os.environ.get('CAFY_API_HOST')
-    CAFY_RUN_ID = os.environ.get('CAFY_RUN_ID')
-    CAFY_API_KEY = os.environ.get('CAFY_API_KEY')
-    log.info("CAFY_API_HOST:{0}, CAFY_RUN_ID:{1},  CAFY_API_KEY:{2}".format(CAFY_API_HOST, CAFY_RUN_ID, CAFY_API_KEY))
-    headers = {'Content-Type': 'application/json',
-               'Authorization': 'Bearer {}'.format(os.environ.get('CAFY_API_KEY'))}
-    try:
-        if CafyLog.registration_id:
-            url = '{0}/api/runs/{1}'.format(os.environ.get('CAFY_API_HOST'), os.environ.get('CAFY_RUN_ID'))
-            log.info("url: {}".format(url))
-            log.info("Calling API service for live logging of reg_id ")
-            params = {"reg_id": CafyLog.registration_id}
-            response = requests.patch(url, json=params, headers=headers)
-            if response.status_code == 200:
-                log.info("Calling API service for live logging of reg_id successful")
+    if config.option.enable_live_update:
+        log.info("Live logging the status of testcases enabled.")
+        os.environ['enable_live_update'] = 'True'
+        #Send the registration_id to CAFY_API_HOST for live logging
+        CAFY_API_HOST = os.environ.get('CAFY_API_HOST')
+        CAFY_RUN_ID = os.environ.get('CAFY_RUN_ID')
+        CAFY_API_KEY = os.environ.get('CAFY_API_KEY')
+        log.info("CAFY_API_HOST:{0}, CAFY_RUN_ID:{1},  CAFY_API_KEY:{2}".format(CAFY_API_HOST, CAFY_RUN_ID, CAFY_API_KEY))
+        headers = {'Content-Type': 'application/json',
+                   'Authorization': 'Bearer {}'.format(os.environ.get('CAFY_API_KEY'))}
+        try:
+            if CafyLog.registration_id:
+                url = '{0}/api/runs/{1}'.format(os.environ.get('CAFY_API_HOST'), os.environ.get('CAFY_RUN_ID'))
+                log.info("url: {}".format(url))
+                log.info("Calling API service for live logging of reg_id ")
+                params = {"reg_id": CafyLog.registration_id}
+                response = requests.patch(url, json=params, headers=headers)
+                if response.status_code == 200:
+                    log.info("Calling API service for live logging of reg_id successful")
+                else:
+                    log.warning("Calling API service for live logging of reg_id failed")
             else:
-                log.warning("Calling API service for live logging of reg_id failed")
-        else:
-            log.warning("registration_id is not set, therefore not sending it to API service for live logging")
-    except Exception as e:
-        log.error("Error while sending the reg_id to live logging's api server: {}".format(e))
+                log.warning("registration_id is not set, therefore not sending it to API service for live logging")
+        except Exception as e:
+            log.warning("Error while sending the reg_id to live logging's api server: {}".format(e))
 
-    #Send the TestCases and its status(upcoming) collected to http://cafy3-dev-lnx:3100 for live logging
-    try:
-        for item in items:
-            nodeid = item.nodeid.split('::()::')
-            finer_nodeid = nodeid[0].split('::')
-            class_name = finer_nodeid[-1]
-            d = dict()
-            d["case_name"] = '.'.join([class_name, item.name]) # To get the testcase_name in format of className.functionName as per allure xml
-            d["status"] = "upcoming"
-            CafyLog.collected_testcases.append(d)
-        url = '{0}/api/runs/{1}/cases'.format(os.environ.get('CAFY_API_HOST'), os.environ.get('CAFY_RUN_ID'))
-        log.info("url: {}".format(url))
-        log.info("Calling API service for live logging of collected testcases ")
-        response = requests.post(url, json=CafyLog.collected_testcases, headers=headers)
-        if response.status_code == 200:
-            log.info("Calling API service for live logging of collected testcases successful")
-        else:
-            log.warning("Calling API service for live logging of collected testcases failed")
+        #Send the TestCases and its status(upcoming) collected to http://cafy3-dev-lnx:3100 for live logging
+        try:
+            for item in items:
+                nodeid = item.nodeid.split('::()::')
+                finer_nodeid = nodeid[0].split('::')
+                class_name = finer_nodeid[-1]
+                d = dict()
+                d["case_name"] = '.'.join([class_name, item.name]) # To get the testcase_name in format of className.functionName as per allure xml
+                d["status"] = "upcoming"
+                CafyLog.collected_testcases.append(d)
+            url = '{0}/api/runs/{1}/cases'.format(os.environ.get('CAFY_API_HOST'), os.environ.get('CAFY_RUN_ID'))
+            log.info("url: {}".format(url))
+            log.info("Calling API service for live logging of collected testcases ")
+            response = requests.post(url, json=CafyLog.collected_testcases, headers=headers)
+            if response.status_code == 200:
+                log.info("Calling API service for live logging of collected testcases successful")
+            else:
+                log.warning("Calling API service for live logging of collected testcases failed")
 
-    except Exception as e:
-        log.error("Error while sending the live status of testcases collected: {}".format(e))
+        except Exception as e:
+            log.warning("Error while sending the live status of testcases collected: {}".format(e))
 
 
 
@@ -925,29 +931,29 @@ class EmailReport(object):
                 except Exception:
                     pass
 
+            if os.environ.get('enable_live_update'):
+                # Send the testcasename and its status along with failtrace if any to the live logging API service
+                headers = {'Content-Type': 'application/json',
+                                   'Authorization': 'Bearer {}'.format(os.environ.get('CAFY_API_KEY'))}
+                try:
+                    for item in CafyLog.collected_testcases:
+                        if testcase_name in item.values():
+                            item['status'] = self.testcase_dict[testcase_name]
+                            if testcase_name in self.testcase_failtrace_dict:
+                                item['fail_log'] = CafyLog.fail_log_msg
+                    url = '{0}/api/runs/{1}/cases'.format(os.environ.get('CAFY_API_HOST'),
+                                                                 os.environ.get('CAFY_RUN_ID'))
+                    self.log.info("url: {}".format(url))
+                    self.log.info("Calling API service for live logging of executed testcases ")
+                    self.log.info("json = {0}".format(CafyLog.collected_testcases))
+                    response = requests.post(url, json=CafyLog.collected_testcases, headers=headers)
+                    if response.status_code == 200:
+                        self.log.info("Calling API service for live logging of executed testcase successful")
+                    else:
+                        self.log.warning("Calling API service for live logging of executed testcases failed")
 
-            # Send the testcasename and its status along with failtrace if any to the live logging API service
-            headers = {'Content-Type': 'application/json',
-                               'Authorization': 'Bearer {}'.format(os.environ.get('CAFY_API_KEY'))}
-            try:
-                for item in CafyLog.collected_testcases:
-                    if testcase_name in item.values():
-                        item['status'] = self.testcase_dict[testcase_name]
-                        if testcase_name in self.testcase_failtrace_dict:
-                            item['fail_log'] = CafyLog.fail_log_msg
-                url = '{0}/api/runs/{1}/cases'.format(os.environ.get('CAFY_API_HOST'),
-                                                             os.environ.get('CAFY_RUN_ID'))
-                self.log.info("url: {}".format(url))
-                self.log.info("Calling API service for live logging of executed testcases ")
-                self.log.info("json = {0}".format(CafyLog.collected_testcases))
-                response = requests.post(url, json=CafyLog.collected_testcases, headers=headers)
-                if response.status_code == 200:
-                    self.log.info("Calling API service for live logging of executed testcase successful")
-                else:
-                    self.log.warning("Calling API service for live logging of executed testcases failed")
-
-            except Exception as e:
-                self.log.error("Error while sending the live status of executed testcases: {}".format(e))
+                except Exception as e:
+                    self.log.warning("Error while sending the live status of executed testcases: {}".format(e))
 
 
             self.log.title("Finish test: %s (%s)" %(testcase_name,status))
