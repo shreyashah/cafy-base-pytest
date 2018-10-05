@@ -540,13 +540,14 @@ def pytest_collection_modifyitems(session, config, items):
         #Send the TestCases and its status(upcoming) collected to http://cafy3-dev-lnx:3100 for live logging
         try:
             for item in items:
-                nodeid = item.nodeid.split('::()::')
-                finer_nodeid = nodeid[0].split('::')
-                class_name = finer_nodeid[-1]
-                d = dict()
-                d["case_name"] = '.'.join([class_name, item.name]) # To get the testcase_name in format of className.functionName as per allure xml
-                d["status"] = "upcoming"
-                CafyLog.collected_testcases.append(d)
+                if not item.get_marker('Future'):  #Exclude the Future marked testcases to be shown as upcoming
+                    nodeid = item.nodeid.split('::()::')
+                    finer_nodeid = nodeid[0].split('::')
+                    class_name = finer_nodeid[-1]
+                    d = dict()
+                    d["case_name"] = '.'.join([class_name, item.name]) # To get the testcase_name in format of className.functionName as per allure xml
+                    d["status"] = "upcoming"
+                    CafyLog.collected_testcases.append(d)
             url = '{0}/api/runs/{1}/cases'.format(os.environ.get('CAFY_API_HOST'), os.environ.get('CAFY_RUN_ID'))
             log.info("url: {}".format(url))
             log.info("Calling API service for live logging of collected testcases ")
