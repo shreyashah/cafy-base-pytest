@@ -1497,13 +1497,18 @@ class CafyReportData(object):
         """
         Convert time object into a human-readable format
         """
-        run_time = (datetime.min + delta).time()
-        if run_time.hour == 0 and run_time.minute == 0:
-            return "{}s".format(run_time.second)
-        elif run_time.hour == 0:
-            return "{}m {}s".format(run_time.minute, run_time.second)
+        _m, _s = divmod(delta.seconds, 60)
+        _h, _m = divmod(_m, 60)
+        _d = delta.days
+        if _d > 0:
+            run_time = "{}d {}h".format(_d, _h)
+        elif _h > 0:
+            run_time = "{}h {}m".format(_h, _m)
+        elif _m > 0:
+            run_time = "{}m {}s".format(_m, _s)
         else:
-            return "{}h {}m".format(run_time.hour, run_time.minute)
+            run_time = "{}s".format(_s)
+        return run_time
 
 
 class LogGrouping:
