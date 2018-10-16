@@ -232,6 +232,7 @@ def pytest_configure(config):
     script_list = config.option.file_or_dir
     # register additional markers
     config.addinivalue_line("markers", "Future(name): mark test that are planned for future")
+    config.addinivalue_line("markers", "Feature(name): mark feature of a testcase")
     config.addinivalue_line("markers", "autofail(name): mark test to Fail when  this testcase has triggered autofail condition")
 
     if script_list:
