@@ -171,6 +171,9 @@ def pytest_addoption(parser):
                     help='Variable to enable mongo learning, default is False')
     group.addoption('--mongo-read', dest='mongo_read', action='store_true',
                     help='Variable to enable mongo read, default is False')
+    group.addoption('--mongo-mode', action='store', dest='mongo_mode',
+            metavar='mongo_mode', 
+            help='Variable to enable mongo read/write, default is None')
 
 def is_valid_param(arg, file_type=None):
     if not arg:
@@ -229,6 +232,7 @@ def pytest_configure(config):
     CafyLog.topology_file = config.option.topology_file
     CafyLog.test_input_file = config.option.test_input_file
     CafyLog.tag_file = config.option.tag_file
+    CafyLog.mongomode=config.option.mongo_mode
     script_list = config.option.file_or_dir
     # register additional markers
     config.addinivalue_line("markers", "Future(name): mark test that are planned for future")
