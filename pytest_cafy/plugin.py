@@ -240,8 +240,8 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "autofail(name): mark test to Fail when  this testcase has triggered autofail condition")
 
     if script_list:
-        script_path = script_list[0]
-        script_path = script_path.split('::')[0]
+        script_name = script_list[0]
+        script_name = script_name.split('::')[0]
         #If someone gives the script in the format
         #moduleName::className::testcaseName to execute only a specific testcase
         CafyLog.script_path = os.path.abspath(script_path)
