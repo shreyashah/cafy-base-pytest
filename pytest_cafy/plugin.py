@@ -246,7 +246,7 @@ def pytest_configure(config):
         #moduleName::className::testcaseName to execute only a specific testcase
         CafyLog.script_path = os.path.abspath(script_name)
         script_path = os.path.basename(script_name).replace('.py', '')
-        CafyLog.module_name = script_name
+        CafyLog.module_name = script_name.replace('.py','')
         _current_time = get_datentime()
         pid = os.getpid()
         work_dir_name = "%s_%s_p%s" % (script_name,_current_time, pid )
