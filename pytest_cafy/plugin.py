@@ -381,10 +381,10 @@ def pytest_configure(config):
                 print("debug_server name not provided in topo file")
             else:
                 try:
-                    if os.environment.get("Token") is not None:
+                    if os.getenv("Token") is not None:
                         url = 'https://{0}:5001/create/'.format(CafyLog.debug_server)
                         headers = {'Content-Type': 'application/json',
-                                   'Authorization': 'Bearer {}'.format(os.environment.get("Token"))}
+                                   'Authorization': 'Bearer {}'.format(os.getenv("Token"))}
                         log.info("Calling Registration service to register the test execution (url:%s)" % url)
                         response = requests.post(url, files=files, data=params, headers=headers, timeout=300)
                     else:
@@ -793,10 +793,10 @@ class EmailReport(object):
             self.log.info("debug_server name not provided in topo file")
         else:
             try:
-                if os.environment.get("Token") is not None:
+                if os.getenv("Token") is not None:
                     url = "https://{0}:5001/initiate_analyzer/".format(CafyLog.debug_server)
                     headers = {'Content-Type': 'application/json',
-                               'Authorization': 'Bearer {}'.format(os.environment.get("Token"))}
+                               'Authorization': 'Bearer {}'.format(os.getenv("Token"))}
                     self.log.info("Calling registration service (url:%s) to initialize analyzer" % url)
                     response = requests.post(url, data=params, headers=headers)
                 else:
@@ -878,10 +878,10 @@ class EmailReport(object):
             self.log.info("debug_server name not provided in topo file")
         else:
             try:
-                if os.environment.get("TOKEN") is not None:
+                if os.getenv("TOKEN") is not None:
                     url = "https://{0}:5001/end_test_case/".format(CafyLog.debug_server)
                     headers = {'Content-Type': 'application/json',
-                               'Authorization': 'Bearer {}'.format(os.environment.get("TOKEN"))}
+                               'Authorization': 'Bearer {}'.format(os.getenv("TOKEN"))}
                     self.log.info("Calling registration service (url:%s) to initialize analyzer" % url)
                     response = requests.post(url, data=params, headers=headers)
                 else:
@@ -917,10 +917,10 @@ class EmailReport(object):
                     self.log.error("debug_server name not provided in topo file")
                 else:
                     try:
-                        if os.environment.get("TOKEN") is not None:
+                        if os.getenv("TOKEN") is not None:
                             url = 'https://{0}:5001/registertest/'.format(CafyLog.debug_server)
                             headers = {'Content-Type': 'application/json',
-                                       'Authorization': 'Bearer {}'.format(os.environment.get("TOKEN"))}
+                                       'Authorization': 'Bearer {}'.format(os.getenv("TOKEN"))}
                         else:
                             url = 'http://{0}:5001/registertest/'.format(CafyLog.debug_server)
 
@@ -1285,9 +1285,9 @@ class EmailReport(object):
             self.log.info("debug_server name not provided in topo file")
         else:
             try:
-                if os.environment.get("TOKEN") is not None:
+                if os.getenv("TOKEN") is not None:
                     url = "https://{0}:5001/startdebug/".format(CafyLog.debug_server)
-                    headers['Authorization'] = 'Bearer {}'.format(os.environment.get("TOKEN"))
+                    headers['Authorization'] = 'Bearer {}'.format(os.getenv("TOKEN"))
                 else:
                     url = "http://{0}:5001/startdebug/".format(CafyLog.debug_server)
 
@@ -1307,9 +1307,9 @@ class EmailReport(object):
             self.log.info("debug_server name not provided in topo file")
         else:
             try:
-                if os.environment.get("TOKEN") is not None:
+                if os.getenv("TOKEN") is not None:
                     url = "https://{0}:5003/startrootcause/".format(CafyLog.debug_server)
-                    headers['Authorization'] = 'Bearer {}'.format(os.environment.get("TOKEN"))
+                    headers['Authorization'] = 'Bearer {}'.format(os.getenv("TOKEN"))
                 else:
                     url = "http://{0}:5003/startrootcause/".format(CafyLog.debug_server)
 
@@ -1418,10 +1418,10 @@ class EmailReport(object):
 
 
         try:
-            if os.environment.get("TOKEN") is not None:
+            if os.getenv("TOKEN") is not None:
                 url = 'https://{0}:5001/get_analyzer_log/'.format(CafyLog.debug_server)
                 headers = {'Content-Type': 'application/json',
-                           'Authorization': 'Bearer {}'.format(os.environment.get("TOKEN"))}
+                           'Authorization': 'Bearer {}'.format(os.getenv("TOKEN"))}
                 response = requests.get(url, data=params, headers=headers)
             else:
                 url = 'http://{0}:5001/get_analyzer_log/'.format(CafyLog.debug_server)
@@ -1455,9 +1455,9 @@ class EmailReport(object):
                       "input_file": CafyLog.test_input_file}
             headers = {'content-type': 'application/json'}
             try:
-                if os.environment.get("TOKEN") is not None:
+                if os.getenv("TOKEN") is not None:
                     url = 'https://{0}:5001/uploadcollectorlogfile/'.format(CafyLog.debug_server)
-                    headers['Authorization'] = 'Bearer {}'.format(os.environment.get("TOKEN"))
+                    headers['Authorization'] = 'Bearer {}'.format(os.getenv("TOKEN"))
                 else:
                     url = 'http://{0}:5001/uploadcollectorlogfile/'.format(CafyLog.debug_server)
 
@@ -1478,9 +1478,9 @@ class EmailReport(object):
                         else:
                             self.log.info("No collector log file received")
 
-                if os.environment.get("TOKEN") is not None:
+                if os.getenv("TOKEN") is not None:
                     url = 'https://{0}:5001/deleteuploadedfiles/'.format(CafyLog.debug_server)
-                    headers['Authorization'] = 'Bearer {}'.format(os.environment.get("TOKEN"))
+                    headers['Authorization'] = 'Bearer {}'.format(os.getenv("TOKEN"))
                 else:
                     url = 'http://{0}:5001/deleteuploadedfiles/'.format(CafyLog.debug_server)
 
