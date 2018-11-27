@@ -914,6 +914,18 @@ class EmailReport(object):
             status = "unknown"
             if testcase_name in self.testcase_dict:
                 status = self.testcase_dict[testcase_name]
+            try:
+                temp_json ={}
+                temp_json["name"] = testcase_name
+                temp_json["action"]= self.log.device_actions
+                temp_json['testcase_status'] = status
+                if status != "passed" :
+                    temp_json['error'] = CafyLog.fail_log_msg
+                    temp_json["exception"] = self.log.exception_details
+                self.log.buffer_to_retest.append(temp_json)
+            except Exception as err:
+                self.log.info("Error {} happened while getting deta for retest" .format(err))
+
             create_fd_file = os.environ.get('enable_fd_collection', False)
             if create_fd_file:
                 self.log.info("File descriptor collection enabled and it will be saved in file_descriptors.txt in the archive")
@@ -1089,6 +1101,13 @@ class EmailReport(object):
                                 reg_id = '00'
 
                             exception_type = call.excinfo.type
+                            try:
+                                if issubclass(exception_type, CafyException.CafyBaseException):
+                                    exception_details = call.excinfo.value.get_exception_details()
+                                    self.log.exception_details = exception_details
+                            except:
+                                self.log.info("Error happened while getting exception details for retest")
+
                             # Check if the exception encountered is not an instance of CafyBaseException, then don't invoke collector service
                             if not issubclass(exception_type, CafyException.CafyBaseException):
                                 self.log.info(
@@ -1434,6 +1453,11 @@ class EmailReport(object):
                     self.log.info("Error in deleting topology and input files from registration server")
             except:
                 self.log.info("Error in uploading collector logfile")
+            try:
+                with open(os.path.join(CafyLog.work_dir, "retest_data.json"), "w") as f:
+                    f.write(json.dumps(self.log.buffer_to_retest))
+            except Exception as error:
+                self.log.info(error)
         '''
         line_regex = re.compile(r"\-\w*\-{1,}\-\d{4}\-\d{2}\-\d{2}T\d*\-\d*\-\d*\[([\w\-:]*)\](\[.*\])?>")
         log_filename = os.path.join(CafyLog.work_dir, 'all.log')
