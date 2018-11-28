@@ -637,6 +637,7 @@ class EmailReport(object):
         self.reg_dict = reg_dict
         self.log = CafyLog("cafy")
         self.errored_testcase_count = {}
+        self.analyzer_testcase = {}
         # using the first item of the script list for archive name as in most
         # cases it would be list with one element because we usally run pyest
         # with single test script
@@ -843,7 +844,7 @@ class EmailReport(object):
         params = {"test_case": test_case,
                   "reg_id": reg_id,
                   "debug_server_name": debug_server}
-        for i in range(10):
+        for i in range(5):
             try:
                 analyzer_status = self.check_analyzer_status(params, headers)
                 if analyzer_status:
@@ -909,8 +910,12 @@ class EmailReport(object):
         if report.when == 'teardown':
             if self.reg_dict:
                 reg_id = self.reg_dict.get('reg_id')
-                analyzer_status = self.post_testcase_status(reg_id, testcase_name, CafyLog.debug_server)
-                self.log.info('Analyzer Status is {}'.format(analyzer_status))
+                test_class = report.nodeid.split('::')[1]
+                if (test_class not in self.analyzer_testcase.keys()) or self.analyzer_testcase.get(test_class) == 1:
+                    analyzer_status = self.post_testcase_status(reg_id, testcase_name, CafyLog.debug_server)
+                    self.log.info('Analyzer Status is {}'.format(analyzer_status))
+                else:
+                    self.log.info('Analyzer is not invoked as testcase failed in setup')
             status = "unknown"
             if testcase_name in self.testcase_dict:
                 status = self.testcase_dict[testcase_name]
@@ -1073,6 +1078,11 @@ class EmailReport(object):
                 if self.reg_dict:
                     if hasattr(report, 'when'):
                         if report.when == 'setup':
+                            test_class = node.nodeid.split('::')[1]
+                            if test_class not in self.analyzer_testcase.keys():
+                                self.analyzer_testcase.update({test_class: 1})
+                            else:
+                                self.analyzer_testcase[test_class] += 1
                             if node.cls not in self.errored_testcase_count:
                                 self.errored_testcase_count[node.cls] = 1
                             else:
