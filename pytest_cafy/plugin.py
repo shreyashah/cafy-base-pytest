@@ -844,19 +844,16 @@ class EmailReport(object):
         params = {"test_case": test_case,
                   "reg_id": reg_id,
                   "debug_server_name": debug_server}
-        for i in range(5):
-            try:
-                analyzer_status = self.check_analyzer_status(params, headers)
-                if analyzer_status:
-                    break
-                else:
-                    self.log.info("Analyzer still working, sleeping for 30s")
-                    time.sleep(30)
-            except Exception as err:
-                self.log.error("Exception hit while checking analyzer status {}".format(repr(err)))
-                self.log.error("Analysis Failed exiting check")
-                analyzer_status = False
-                break
+
+        try:
+            analyzer_status = self.check_analyzer_status(params, headers)
+            if not analyzer_status:
+                self.log.info("Analyzer still working, Continuing Test case")
+        except Exception as err:
+            self.log.error("Exception hit while checking analyzer status {}".format(repr(err)))
+            self.log.error("Analysis Failed exiting check")
+            analyzer_status = False
+
         return analyzer_status
 
     def check_analyzer_status(self, params, headers):
