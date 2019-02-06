@@ -22,7 +22,7 @@ import pytest
 
 from _pytest.terminal import TerminalReporter
 from _pytest.runner import runtestprotocol
-from _pytest.mark import MarkInfo
+#from _pytest.mark import MarkInfo
 
 from enum import Enum
 from tabulate import tabulate
@@ -74,6 +74,8 @@ if cafy_args:
     config.read(cafy_args) # parse existing file
     config_sections = config.sections()
 
+class _CafyConfig:
+    allure_server = "file://"
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_addoption(parser):
@@ -96,6 +98,8 @@ def pytest_addoption(parser):
         email_list = None
         smtp_server = 'localhost'
         smtp_port = 25
+    if 'web' in yml:
+        _CafyConfig.allure_server=yml['web'].get('server',"file://")
 
     group = parser.getgroup('terminal reporting')
     group.addoption('--mail-to', action='store', dest='email_list',
@@ -1345,6 +1349,8 @@ class EmailReport(object):
         if os.environ.get('cafykit_mongo_read'):
             del os.environ['cafykit_mongo_read']
 
+
+
     def _parse_all_log(self, input_file_handler):
         log_parsing_state = LogState.NONE
         log_grouping = None
@@ -1418,12 +1424,32 @@ class EmailReport(object):
             self.log.info('No Analyzer log file receiver')
 
 
+    def _generate_allure_report(self):
+        allure_path = "/auto/cafy/cafykit/allure2/bin/allure"
+        if not os.path.exists(allure_path):
+            allure_path = "allure"
+        allure_source_dir = os.path.join(self.archive,"allure")
+        allure_report_dir = os.path.join(allure_source_dir,"html")
+        cmd = "{allure_path} generate {allure_source_dir} --report-dir {allure_report_dir}".format(
+                    allure_path=allure_path,
+                    allure_source_dir=allure_source_dir,
+                    allure_report_dir=allure_report_dir)
+        print("Allure Command Line Used: {cmd}".format(cmd=cmd))
+        allure_report = os.path.join(allure_report_dir,"index.html")
+        allure_web_report = os.path.join(_CafyConfig.allure_server,allure_report.strip("/"))
+        os.system(cmd)
+        #print("Report Generated at: {allure_report}".format(allure_report=allure_report))
+        print("Report View at: {allure_web_report}".format(allure_web_report=allure_web_report))
+
     @pytest.hookimpl(tryfirst=True)
     def pytest_sessionfinish(self):
         test_data_file = os.path.join(CafyLog.work_dir, "testdata.json")
         self.log.info("Test data generated at %s" % test_data_file)
         CafyLog.TestData.save(test_data_file,overwrite=True)
         debug_enabled_status = os.getenv("cafykit_debug_enable", None)
+
+        self._generate_allure_report()
+        
         if debug_enabled_status and CafyLog.registration_id:
             self.log.title("End run for registration id: %s" % CafyLog.registration_id)
             self._get_analyzer_log()
@@ -1611,6 +1637,8 @@ class CafyReportData(object):
                     self.htmlprefix = 'file:///'
         else:
             self.summary_report = None
+
+
 
     @staticmethod
     def get_readable_time(delta):
