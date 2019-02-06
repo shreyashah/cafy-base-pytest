@@ -76,6 +76,7 @@ if cafy_args:
 
 class _CafyConfig:
     allure_server = "file://"
+    summary = {}
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_addoption(parser):
@@ -1434,16 +1435,27 @@ class EmailReport(object):
                     allure_path=allure_path,
                     allure_source_dir=allure_source_dir,
                     allure_report_dir=allure_report_dir)
-        print("Allure Command Line Used: {cmd}".format(cmd=cmd))
+        #print("Allure Command Line Used: {cmd}".format(cmd=cmd))
         allure_report = os.path.join(allure_report_dir,"index.html")
-        allure_web_report = os.path.join(_CafyConfig.allure_server,allure_report.strip("/"))
+        allure_html_report = os.path.join(_CafyConfig.allure_server,allure_report.strip("/"))
         os.system(cmd)
         #print("Report Generated at: {allure_report}".format(allure_report=allure_report))
-        print("Report View at: {allure_web_report}".format(allure_web_report=allure_web_report))
+        self.log.info("Report: {allure_html_report}".format(allure_html_report=allure_html_report))
+        _CafyConfig.summary["allure2"] = {
+                "commandline" : cmd,
+                "html" :  allure_html_report,
+                "source_dir": allure_source_dir,
+                "report_dir": allure_report_dir,
+                "report": allure_report,
+            }
+        
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_sessionfinish(self):
         test_data_file = os.path.join(CafyLog.work_dir, "testdata.json")
+        _CafyConfig.summary["test_data"] = {
+            "location": test_data_file
+        }
         self.log.info("Test data generated at %s" % test_data_file)
         CafyLog.TestData.save(test_data_file,overwrite=True)
         debug_enabled_status = os.getenv("cafykit_debug_enable", None)
@@ -1491,6 +1503,11 @@ class EmailReport(object):
                     f.write(json.dumps(self.log.buffer_to_retest))
             except Exception as error:
                 self.log.info(error)
+
+        summary_file = os.path.join(self.archive,"summary.json")
+        with open(summary_file, 'w') as outfile:
+            json.dump(_CafyConfig.summary, outfile, indent=4, sort_keys=True)
+
         '''
         line_regex = re.compile(r"\-\w*\-{1,}\-\d{4}\-\d{2}\-\d{2}T\d*\-\d*\-\d*\[([\w\-:]*)\](\[.*\])?>")
         log_filename = os.path.join(CafyLog.work_dir, 'all.log')
