@@ -20,6 +20,8 @@ import inspect
 import yaml
 import pytest
 
+from .cafy import Cafy
+
 from _pytest.terminal import TerminalReporter
 from _pytest.runner import runtestprotocol
 #from _pytest.mark import MarkInfo
@@ -40,6 +42,8 @@ from logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
 from utils.cafyexception  import CafyException
 from debug import DebugLibrary
+import pluggy
+import _pytest
 
 #Check with CAFYKIT_HOME or GIT_REPO or CAFYAP_REPO environment is set,
 #if all are set, CAFYAP_REPO takes precedence
@@ -80,6 +84,8 @@ class _CafyConfig:
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_addoption(parser):
+    setattr(pytest,"cafy",Cafy)
+
     yml = load_config_file()
     if 'email' in yml:
         email = yml['email']
@@ -878,6 +884,23 @@ class EmailReport(object):
                 self.log.error("Http call to registration service url:%s is not successful" % url)
                 raise CafyException.CafyBaseException("Analyzer is failing")
 
+    @pytest.hookimpl(tryfirst=True, hookwrapper=True)
+    def pytest_runtest_makereport(self, item, call):
+        report = yield
+        if call.when == "call" and Cafy.RunInfo.active_exceptions:
+            try:
+                elist = list()
+                for exception in Cafy.RunInfo.active_exceptions:
+                    elist.append(exception)
+                Cafy.RunInfo.active_exceptions = list()
+                raise Cafy.CompositeError(elist)
+            except:
+                exc_info = sys.exc_info()
+                repr = _pytest._code.code.ExceptionInfo.from_current().getrepr(style="line")
+            result = report.get_result()
+            report.exc_info = exc_info
+            result.outcome = "failed"
+            result.longrepr = repr
 
 
     # pytest.hookimpl(tryfirst=True)
@@ -920,7 +943,7 @@ class EmailReport(object):
                     self.log.info('Analyzer is not invoked as testcase failed in setup')
             status = "unknown"
             if testcase_name in self.testcase_dict:
-                status = self.testcase_dict[testcase_name]
+                status = self.testcase_dict[testcase_name].status
             try:
                 temp_json ={}
                 temp_json["name"] = testcase_name
@@ -965,7 +988,7 @@ class EmailReport(object):
                 try:
                     for item in CafyLog.collected_testcases:
                         if testcase_name in item.values():
-                            item['status'] = self.testcase_dict[testcase_name]
+                            item['status'] = self.testcase_dict[testcase_name].status
                             if testcase_name in self.testcase_failtrace_dict:
                                 item['fail_log'] = CafyLog.fail_log_msg
                     url = '{0}/api/runs/{1}/cases'.format(os.environ.get('CAFY_API_HOST'),
@@ -995,14 +1018,14 @@ class EmailReport(object):
                 #which means don't execute the testcase. Such testcase will never go into the
                 #report.when=call stage
                 testcase_name = self.get_test_name(report.nodeid)
-                self.testcase_dict[testcase_name] = 'xfailed'
+                self.testcase_dict[testcase_name] = Cafy.TestcaseStatus(testcase_name,'xfailed',report.longrepr)
 
             else:
                 #This is to handle tests that are marked with @pytest.mark.skip(..)
                 #which means skip the testcase. Such testcase will never go into the
                 #report.when=call stage
                 testcase_name = self.get_test_name(report.nodeid)
-                self.testcase_dict[testcase_name] = 'skipped'
+                self.testcase_dict[testcase_name] = Cafy.TestcaseStatus(testcase_name,'skipped',report.longrepr)
             '''
             if report.longrepr:
                 self.testcase_failtrace_dict[testcase_name] = report.longrepr
@@ -1019,7 +1042,7 @@ class EmailReport(object):
                 else:
                     testcase_status = report.outcome
 
-                self.testcase_dict[testcase_name] = testcase_status
+                self.testcase_dict[testcase_name] = Cafy.TestcaseStatus(testcase_name,testcase_status,report.longrepr)
                 if testcase_status == 'failed':
                     self.testcase_failtrace_dict[testcase_name] = CafyLog.fail_log_msg
                     #print('failmsg = ', self.testcase_failtrace_dict[testcase_name])
@@ -1032,7 +1055,7 @@ class EmailReport(object):
                 '''
             else:
                 testcase_status = report.outcome
-                self.testcase_dict[testcase_name] = testcase_status
+                self.testcase_dict[testcase_name] = Cafy.TestcaseStatus(testcase_name,testcase_status,report.longrepr)
                 if testcase_status == 'failed':
                     if report.longrepr:
                         self.testcase_failtrace_dict[testcase_name] = report.longrepr
@@ -1340,8 +1363,10 @@ class EmailReport(object):
             terminalreporter.write_line("\n TestCase Summary Status Table")
             temp_list = []
             for k,v in self.testcase_dict.items():
-                temp_list.append((k,v))
-            print (tabulate(temp_list, headers=['Testcase_name', 'Status'], tablefmt='grid'))
+                #message = ("%s" % v.message).split("\n")
+                message = [v.message]
+                temp_list.append((v.name,v.status,message[0]))
+            print (tabulate(temp_list, headers=['Testcase_name', 'Status', "Message"], tablefmt='psql'))
 
 
         #Unset environ variables cafykit_mongo_learn & cafykit_mongo_read if set

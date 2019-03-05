@@ -1,7 +1,7 @@
 '''
 Created on Feb 16, 2017
 
-@author: Fahad Naeem Khan
+@author: Amrendra Kumar
 '''
 
 from .__version__ import __version__
