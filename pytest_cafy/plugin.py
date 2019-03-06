@@ -890,10 +890,11 @@ class EmailReport(object):
         if call.when == "call" and Cafy.RunInfo.active_exceptions:
             try:
                 elist = list()
+                #title = Cafy.RunInfo.active_exceptions.pop()
                 for exception in Cafy.RunInfo.active_exceptions:
                     elist.append(exception)
                 Cafy.RunInfo.active_exceptions = list()
-                raise Cafy.CompositeError(elist)
+                raise Cafy.CompositeError(elist,title="Step Failure with multiple errors")
             except:
                 exc_info = sys.exc_info()
                 repr = _pytest._code.code.ExceptionInfo.from_current().getrepr(style="line")
@@ -1363,10 +1364,13 @@ class EmailReport(object):
             terminalreporter.write_line("\n TestCase Summary Status Table")
             temp_list = []
             for k,v in self.testcase_dict.items():
-                #message = ("%s" % v.message).split("\n")
-                message = [v.message]
-                temp_list.append((v.name,v.status,message[0]))
-            print (tabulate(temp_list, headers=['Testcase_name', 'Status', "Message"], tablefmt='psql'))
+                try:
+                    message = v.message.chain[0][1].message
+                except:
+                    message = v.message
+
+                temp_list.append((v.name,v.status,message))
+            print (tabulate(temp_list, headers=['Testcase_name', 'Status', "Message"], tablefmt='grid'))
 
 
         #Unset environ variables cafykit_mongo_learn & cafykit_mongo_read if set

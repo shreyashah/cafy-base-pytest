@@ -9,8 +9,10 @@ class Cafy:
         pass
 
     class CompositeError(CafyBaseException):
-        def __init__(self, exceptions):
+        def __init__(self, exceptions=None, title="Composite Error: "):
             self.exceptions = self.flatten_exceptions(exceptions)
+            self.title=title
+            self.raised = False
 
         def flatten_exceptions(self,exceptions):
             exception_list = list()
@@ -25,7 +27,7 @@ class Cafy:
             return exception_list
 
         def __str__(self):
-            result = "Composite Error: \n"
+            result = "{title} \n".format(title=self.title)
             for e in self.exceptions:
                 filename = ""
                 lineno = ""
