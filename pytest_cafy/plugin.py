@@ -292,6 +292,7 @@ def pytest_configure(config):
         CafyLog.work_dir = work_dir
         _setup_env()
 
+        config.option.allure_report_dir=os.path.join(CafyLog.work_dir,"allure")
         #Copy topology-file if given to work_dir
         if config.option.topology_file:
             if os.path.exists(config.option.topology_file):
