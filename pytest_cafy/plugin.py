@@ -19,6 +19,7 @@ import json
 import inspect
 import yaml
 import pytest
+import allure
 
 from .cafy import Cafy
 
@@ -48,6 +49,7 @@ import _pytest
 #Check with CAFYKIT_HOME or GIT_REPO or CAFYAP_REPO environment is set,
 #if all are set, CAFYAP_REPO takes precedence
 CAFY_REPO = os.environ.get("CAFYAP_REPO", None)
+setattr(pytest,"allure",allure)
 if CAFY_REPO is None:
     #If CAFYAP_REPO is not set, check if GIT_REPO or CAFYKIT_HOME is set
     #If both GIT_REPO and CAFYKIT_HOME are set, CAFYKIT_HOME takes precedence
