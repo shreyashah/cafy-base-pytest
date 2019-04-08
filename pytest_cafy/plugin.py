@@ -755,7 +755,11 @@ class EmailReport(object):
 
     def get_test_name(self,name):
         report_name = name.replace("::()::", ".")
-        report_name = report_name.split('::')[-1]
+        report_tokens = report_name.split('::')
+        if len(report_tokens) > 1:
+            report_name = "{klass}.{test}".format(klass=report_tokens[-2],test=report_tokens[-1])
+        else:
+            report_name = test=report_tokens[-1]
         return report_name
 
     def get_open_files(self, pid):
@@ -909,7 +913,6 @@ class EmailReport(object):
 
     # pytest.hookimpl(tryfirst=True)
     def pytest_runtest_logreport(self, report):
-
         testcase_name =  self.get_test_name(report.nodeid)
         if report.when == 'setup':
             self.log.set_testcase(testcase_name)
@@ -920,17 +923,16 @@ class EmailReport(object):
                 params = {"testcase_name": testcase_name}
                 headers = {'content-type': 'application/json'}
                 if CafyLog.debug_server is None:
-                    print("debug_server name not provided in topo file")
-                    self.log.error("debug_server name not provided in topo file")
+                    self.log.error("debug_server name not provided in topology file")
                 else:
                     try:
                         url = 'http://{0}:5001/registertest/'.format(CafyLog.debug_server)
-                        self.log.info("Calling registration service to start handshake(url:%s" % url)
+                        #self.log.info("Calling registration service to start handshake(url:%s" % url)
                         response = requests.post(url, json=params, headers=headers)
                         if response.status_code == 200:
-                            self.log.info("Handshake part of registration service was successful")
+                            self.log.info("Handshake to registration service successful")
                         else:
-                            self.log.error("Handshake part of registration server returned code %d " % response.status_code)
+                            self.log.error("Handshake to registration server returned code %d " % response.status_code)
                     except:
                         self.log.error("Http call to registration service url:%s is not successful" % url)
 
