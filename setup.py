@@ -1,18 +1,18 @@
 '''
 Created on Feb 16, 2017
 
-@author: Cafy
+@author: ask-cafy@cisco.com
 '''
 # sample ./setup.py file
 from setuptools import setup
 
-from pytest_cafy.__version__ import __version__
+from cafy_pytest.__version__ import __version__
 #__version__ = "0.1.0"  
 
 setup(
-    name="pytest_cafy",
-    packages=['pytest_cafy'],
-    package_data={'pytest_cafy': ['resources/*']},
+    name="cafy_pytest",
+    packages=['cafy_pytest'],
+    package_data={'cafy_pytest': ['resources/*']},
     author='Cafy',
     author_email='cafy-support@cisco.com',
     version=__version__,
@@ -22,7 +22,7 @@ setup(
     install_requires=['pytest>=2.3', 'jinja2'],
     # the following makes a plugin available to pytest
     entry_points={
-        'pytest11': ['pytest_cafy = pytest_cafy.plugin']
+        'pytest11': ['cafy_pytest = cafy_pytest.plugin']
     },
     # custom PyPI classifier for pytest plugins
     classifiers=[
