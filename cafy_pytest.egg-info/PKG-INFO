@@ -1,0 +1,11 @@
+Metadata-Version: 1.1
+Name: cafy-pytest
+Version: 1.0.0
+Summary: Cafy Pytest Hooks and plugins
+Home-page: http://cafy.io
+Author: Cafy
+Author-email: ask-cafy@cisco.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Framework :: Pytest
