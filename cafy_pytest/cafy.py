@@ -58,6 +58,17 @@ class Cafy:
             self.name = name
             self.status = status
             self.message = message
+            try:
+                self.html_message = message.chain[0][1].message
+            except:
+                self.html_message = str(message)
+            if self.html_message:
+                self.html_message = self.html_message.replace("\n","<br/>")
+            else:
+                self.html_message = ""
+
+        def get_status(self):
+            return repr(status)
 
     def step(title, **kwargs):
         if callable(title):

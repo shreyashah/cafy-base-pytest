@@ -19,8 +19,8 @@ hr {
   margin-left: auto;
   padding: 5px;
   width: 97%;
-  max-width: 750px;
-  min-width: 350px;
+  max-width: 1024px;
+  min-width: 512px;
 }
 .parallel-run {
   color: #ffffff;

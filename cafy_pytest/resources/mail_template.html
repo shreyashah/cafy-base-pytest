@@ -26,8 +26,8 @@
 {% for name, status in report.testcase_dict.items() %}
   <tr>
     <td><left>{{name}}</left></td>
-    <td class={{status}}><left>{{status}}</left></td>
-    <td class="fail-log"><left>{{report.testcase_failtrace_dict[name]}}</left></td>
+    <td class={{status.status}}><left>{{status.status}}</left></td>
+    <td class="{{status.status}}"><left>{{status.html_message}}</left></td>
   </tr>
 {% endfor %}
 {%- endmacro %}
@@ -163,9 +163,11 @@
       </tbody>
     </table>
 
-    <!-- Testcase Status Summary -->
-    <h3>Testcase Status Summary</h3>
+    <!-- Testcase Status -->
+    <h3>Test Details</h3>
     <table class="table table-bordered">
+      <col width="25%">
+      <col width="80px">
       <thead>
         <tr>
           <th><left>Testcase Name</left></th>
@@ -178,38 +180,37 @@
       </tbody>
     </table>
 
-    <!-- Build Info -->
 
+    <!-- Build Info -->
     <h3>Build Info</h3>
       <p style="line-height:1.8em; word-wrap:break-word; font-size:13px">
       <span class="badge">Image</span>
       &nbsp;{{report.image}}</p>
     <table class="table table-bordered">
-        <col width="30%">
-        <tbody>
-          <tr>
-            <td>XR EFR</td>
-            <td>{{report.xr_efr}}</td>
-          </tr>
-          <tr>
-            <td>XR workspace</td>
-            <td>{{report.xr_ws}}</td>
-          </tr>
-          <tr>
-            <td>Calvados EFR</td>
-            <td>{{report.cal_efr}}</td>
-          </tr>
-          <tr>
-            <td>Calvados workspace</td>
-            <td>{{report.cal_ws}}</td>
-          </tr>
-          {% if report.jenkins_url %}
-          <tr>
-            <td>Jenkins URL</td>
-            <td><a href="{{report.jenkins_url}}">{{report.jenkins_url}}</a></td>
-          </tr>
-          {% endif %}
-        </tbody>
+      <tbody>
+        <tr>
+          <td>XR EFR</td>
+          <td>{{report.xr_efr}}</td>
+        </tr>
+        <tr>
+          <td>XR workspace</td>
+          <td>{{report.xr_ws}}</td>
+        </tr>
+        <tr>
+          <td>Calvados EFR</td>
+          <td>{{report.cal_efr}}</td>
+        </tr>
+        <tr>
+          <td>Calvados workspace</td>
+          <td>{{report.cal_ws}}</td>
+        </tr>
+        {% if report.jenkins_url %}
+        <tr>
+          <td>Jenkins URL</td>
+          <td><a href="{{report.jenkins_url}}">{{report.jenkins_url}}</a></td>
+        </tr>
+        {% endif %}
+      </tbody>
     </table>
 
     <!-- Detailed Report -->
