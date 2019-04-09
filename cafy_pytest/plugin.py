@@ -110,7 +110,7 @@ def pytest_addoption(parser):
     if 'web' in yml:
         _CafyConfig.allure_server=yml['web'].get('server',"file://")
 
-    group = parser.getgroup('terminal reporting')
+    group = parser.getgroup('Email Options')
     group.addoption('--mail-to', action='store', dest='email_list',
                     default=email_list, type=str, nargs='*',
                     help='send the email to specified email addresses')
@@ -131,7 +131,11 @@ def pytest_addoption(parser):
     group.addoption('--no-email', dest='no_email', action='store_true',
                     help='if specified no email will be sent')
 
-    group = parser.getgroup('Work Dir Path')
+    group = parser.getgroup('Terminal Reporting')
+    group.addoption('--no-detail-message', dest='no_detail_message', action='store_true',
+                    help='if specified error messages will not be part of terminal summary')
+
+    group = parser.getgroup('Report Directories')
     group.addoption('--work-dir', dest="workdir", metavar="DIR", default=None,
                     help="Path for work dir")
 
@@ -241,6 +245,7 @@ def pytest_configure(config):
     smtp_server = config.option.smtp_server
     smtp_port = config.option.smtp_port
     no_email = config.option.no_email
+    no_detail_message = config.option.no_detail_message
     cafykit_debug_enable = config.option.debug_enable
     CafyLog.topology_file = config.option.topology_file
     CafyLog.test_input_file = config.option.test_input_file
@@ -426,6 +431,7 @@ def pytest_configure(config):
                                     smtp_server,
                                     smtp_port,
                                     no_email,
+                                    no_detail_message,
                                     topo_file,
                                     script_list, reg_dict)
         config.pluginmanager.register(config._email)
@@ -619,7 +625,7 @@ class EmailReport(object):
     START_TIME = time.asctime(time.localtime(START.timestamp()))
 
     def __init__(self, email_addr_list, email_from, email_from_passwd,
-                 smtp_server, smtp_port, no_email, topo_file, script_list, reg_dict):
+                 smtp_server, smtp_port, no_email, no_detail_message, topo_file, script_list, reg_dict):
         '''
         @param email_addr_list: list of email address to which email needs to
         be sent.
@@ -646,12 +652,15 @@ class EmailReport(object):
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
         self.no_email = no_email
+        self.no_detail_message = no_detail_message
         self.script_list = script_list
         self.topo_file = topo_file
         self.reg_dict = reg_dict
         self.log = CafyLog("cafy")
         self.errored_testcase_count = {}
         self.analyzer_testcase = {}
+        self.tabulate_html = None
+        self.allure_html_report = None
         # using the first item of the script list for archive name as in most
         # cases it would be list with one element because we usally run pyest
         # with single test script
@@ -674,7 +683,7 @@ class EmailReport(object):
         self.testcase_failtrace_dict = OrderedDict()
 
     def _sendemail(self):
-        print("\n\nSending Summary Email to %s" % self.email_addr_list)
+        print("\nSending Summary Email to %s" % self.email_addr_list)
         msg = MIMEMultipart()
         # fixme: add exception handling
         with open(self.email_report) as email_fd:
@@ -705,6 +714,7 @@ class EmailReport(object):
                        'archive': self.archive,
                        'topo_file': self.topo_file}
         report = CafyReportData(**cafy_kwargs)
+        setattr(report,"tabulate_html", self.tabulate_html)
         template_file = os.path.join(self.CURRENT_DIR,
                                      "resources/mail_template.html")
         css_file = os.path.join(self.CURRENT_DIR,
@@ -1349,7 +1359,7 @@ class EmailReport(object):
 
     def pytest_terminal_summary(self, terminalreporter):
         '''this hook is the execution point of email plugin'''
-        self._generate_email_report(terminalreporter)
+        #self._generate_email_report(terminalreporter)
         self._generate_all_log_html()
         if self.CAFY_REPO:
             option = terminalreporter.config.option
@@ -1364,19 +1374,35 @@ class EmailReport(object):
                 if junitxml_file_path != _junitxml_filename:
                     copyfile(_junitxml_filename, junitxml_file_path)
                     os.chmod(junitxml_file_path, 0o775)
+
+        terminalreporter.write_line("\n TestCase Summary Status Table")
+        temp_list = []
+        for k,v in self.testcase_dict.items():
+            try:
+                message = v.message.chain[0][1].message
+            except:
+                message = v.message
+            if not self.no_detail_message:
+                temp_list.append((v.name,v.status,message))
+            else:
+                temp_list.append((v.name, v.status))
+
+        headers = ['Testcase_name', 'Status', "Message"]
+        if self.no_detail_message:
+            self.tabulate_result = tabulate(temp_list, headers=headers[0:2], tablefmt='grid')
+        else:
+            self.tabulate_result = tabulate(temp_list, headers=headers, tablefmt='grid')
+
+
+        terminalreporter.write_line(self.tabulate_result)
+        terminalreporter.write_line("Results: {work_dir}".format(work_dir=CafyLog.work_dir))
+        terminalreporter.write_line("Reports: {allure_html_report}".format(allure_html_report=self.allure_html_report))
+
+
+        self._generate_email_report(terminalreporter)
+
         if not self.no_email:
             self._sendemail()
-            terminalreporter.write_line("\n TestCase Summary Status Table")
-            temp_list = []
-            for k,v in self.testcase_dict.items():
-                try:
-                    message = v.message.chain[0][1].message
-                except:
-                    message = v.message
-
-                temp_list.append((v.name,v.status,message))
-            print (tabulate(temp_list, headers=['Testcase_name', 'Status', "Message"], tablefmt='grid'))
-
 
         #Unset environ variables cafykit_mongo_learn & cafykit_mongo_read if set
         if os.environ.get('cafykit_mongo_learn'):
@@ -1472,6 +1498,7 @@ class EmailReport(object):
         #print("Allure Command Line Used: {cmd}".format(cmd=cmd))
         allure_report = os.path.join(allure_report_dir,"index.html")
         allure_html_report = os.path.join(_CafyConfig.allure_server,allure_report.strip("/"))
+        self.allure_html_report = allure_html_report
         os.system(cmd)
         #print("Report Generated at: {allure_report}".format(allure_report=allure_report))
         self.log.info("Report: {allure_html_report}".format(allure_html_report=allure_html_report))
