@@ -1460,11 +1460,11 @@ class EmailReport(object):
 
 
     def _generate_allure_report(self):
-        allure_path = "/auto/cafy/cafykit/allure2/bin/allure"
+        allure_path = "/auto/cafy/cafykit/allure2/latest/bin/allure"
         if not os.path.exists(allure_path):
             allure_path = "allure"
         allure_source_dir = os.path.join(self.archive,"allure")
-        allure_report_dir = os.path.join(allure_source_dir,"html")
+        allure_report_dir = os.path.join(self.archive,"reports")
         cmd = "{allure_path} generate {allure_source_dir} --report-dir {allure_report_dir}".format(
                     allure_path=allure_path,
                     allure_source_dir=allure_source_dir,
