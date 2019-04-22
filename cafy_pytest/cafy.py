@@ -62,6 +62,7 @@ class Cafy:
                 self.html_message = message.chain[0][1].message
             except:
                 self.html_message = str(message)
+            self.text_message = self.html_message
             if self.html_message:
                 self.html_message = self.html_message.replace("\n","<br/>")
             else:

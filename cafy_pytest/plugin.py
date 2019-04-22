@@ -513,6 +513,17 @@ def pytest_generate_tests(metafunc):
                 print("{0} not found in {1}".format(metafunc.function.__name__,nodeid_count_dict ))
         metafunc.fixturenames.remove('tmp_ct')
 
+
+def get_testcase_name(name):
+    report_name = name.replace("::()::", ".")
+    report_tokens = report_name.split('::')
+    if len(report_tokens) > 1:
+        report_name = "{klass}.{test}".format(klass=report_tokens[-2],test=report_tokens[-1])
+    else:
+        report_name = test=report_tokens[-1]
+    return report_name
+
+
 def pytest_collection_modifyitems(session, config, items):
     log = CafyLog("cafy")
     if config.option.selective_test_file:
@@ -573,11 +584,12 @@ def pytest_collection_modifyitems(session, config, items):
                     class_name = finer_nodeid[-1]
                     d = dict()
                     d["case_name"] = '.'.join([class_name, item.name]) # To get the testcase_name in format of className.functionName as per allure xml
+                    d["case_name"] = get_testcase_name(item.nodeid)
                     d["status"] = "upcoming"
                     CafyLog.collected_testcases.append(d)
             url = '{0}/api/runs/{1}/cases'.format(os.environ.get('CAFY_API_HOST'), os.environ.get('CAFY_RUN_ID'))
-            log.info("url: {}".format(url))
-            log.info("Calling API service for live logging of collected testcases ")
+            log.debug("url: {}".format(url))
+            log.debug("Calling API service for live logging of collected testcases ")
             response = requests.post(url, json=CafyLog.collected_testcases, headers=headers)
             if response.status_code == 200:
                 log.info("Calling API service for live logging of collected testcases successful")
@@ -586,6 +598,7 @@ def pytest_collection_modifyitems(session, config, items):
 
         except Exception as e:
             log.warning("Error while sending the live status of testcases collected: {}".format(e))
+
 
 
 
@@ -1005,13 +1018,14 @@ class EmailReport(object):
                     for item in CafyLog.collected_testcases:
                         if testcase_name in item.values():
                             item['status'] = self.testcase_dict[testcase_name].status
+                            item['fail_log'] = self.testcase_dict[testcase_name].text_message
                             if testcase_name in self.testcase_failtrace_dict:
                                 item['fail_log'] = CafyLog.fail_log_msg
                     url = '{0}/api/runs/{1}/cases'.format(os.environ.get('CAFY_API_HOST'),
                                                                  os.environ.get('CAFY_RUN_ID'))
-                    self.log.info("url: {}".format(url))
-                    self.log.info("Calling API service for live logging of executed testcases ")
-                    self.log.info("json = {0}".format(CafyLog.collected_testcases))
+                    self.log.debug("url: {}".format(url))
+                    self.log.debug("Calling API service for live logging of executed testcases ")
+                    self.log.debug("JSON = {0}".format(json.dumps(CafyLog.collected_testcases, indent=4, sort_keys=True)))
                     response = requests.post(url, json=CafyLog.collected_testcases, headers=headers)
                     if response.status_code == 200:
                         self.log.info("Calling API service for live logging of executed testcase successful")
