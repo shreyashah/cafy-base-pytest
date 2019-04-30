@@ -914,7 +914,7 @@ class EmailReport(object):
                 self.log.error("Http call to registration service url:%s is not successful" % url)
                 raise CafyException.CafyBaseException("Analyzer is failing")
 
-    @pytest.hookimpl(tryfirst=True, hookwrapper=True)
+    @pytest.hookimpl(trylast=True, hookwrapper=True)
     def pytest_runtest_makereport(self, item, call):
         report = yield
         if call.when == "call" and Cafy.RunInfo.active_exceptions:
@@ -927,14 +927,17 @@ class EmailReport(object):
                 raise Cafy.CompositeError(elist,title="Step Failure with multiple errors")
             except:
                 exc_info = sys.exc_info()
-                repr = _pytest._code.code.ExceptionInfo.from_current().getrepr(style="line")
-            result = report.get_result()
-            report.exc_info = exc_info
-            result.outcome = "failed"
-            result.longrepr = repr
+                einfo = _pytest._code.code.ExceptionInfo.from_current()
+                call.excinfo = einfo
+                repr = einfo.getrepr(style="line")
+                result = report.get_result()
+                report.exc_info = exc_info
+                result.outcome = "failed"
+                result.longrepr = repr
+                report.force_result(result)
 
 
-    # pytest.hookimpl(tryfirst=True)
+    pytest.hookimpl(tryfirst=True)
     def pytest_runtest_logreport(self, report):
         testcase_name =  self.get_test_name(report.nodeid)
         if report.when == 'setup':

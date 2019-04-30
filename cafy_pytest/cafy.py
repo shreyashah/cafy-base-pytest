@@ -3,9 +3,13 @@ Cafy Placeholder class for pytest integeration
 """
 
 from allure_commons._allure import StepContext as AllureStepContext
+import pytest
 
 class Cafy:
-    class CafyBaseException(Exception):
+    class Exception(pytest.fail.Exception):
+        pass
+
+    class CafyBaseException(pytest.fail.Exception):
         pass
 
     class CompositeError(CafyBaseException):
