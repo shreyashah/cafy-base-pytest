@@ -4,49 +4,8 @@ Cafy Placeholder class for pytest integeration
 
 from allure_commons._allure import StepContext as AllureStepContext
 import pytest
-
+from utils.cafyexception import CafyException
 class Cafy:
-    class Exception(pytest.fail.Exception):
-        pass
-
-    class CafyBaseException(pytest.fail.Exception):
-        pass
-
-    class CompositeError(CafyBaseException):
-        def __init__(self, exceptions=None, title="Composite Error: "):
-            self.exceptions = self.flatten_exceptions(exceptions)
-            self.title=title
-            self.raised = False
-
-        def flatten_exceptions(self,exceptions):
-            exception_list = list()
-            for exception in exceptions:
-                print(exception)
-                if isinstance(exception,Cafy.CompositeError):
-                    exception_list += self.flatten_exceptions(exception.exceptions)
-                elif isinstance(exception,list):
-                    exception_list += self.flatten_exceptions(exception)
-                else:
-                    exception_list.append(exception)
-            return exception_list
-
-        def __str__(self):
-            result = "{title} \n".format(title=self.title)
-            for e in self.exceptions:
-                filename = ""
-                lineno = ""
-                if e.__traceback__:
-                    filename = e.__traceback__.tb_frame.f_code.co_filename
-                    lineno = e.__traceback__.tb_lineno
-                result += "    {filename}:{lineno}:{etype}({message})\n".format(
-                    filename=filename,
-                    lineno=lineno,
-                    etype=e.__class__.__name__,
-                    message=str(e))
-            return result
-
-        def __xrepr__(self):
-            return self.__str__()
 
     class Globals: 
         pass
@@ -55,7 +14,6 @@ class Cafy:
         current_testcase = None
         current_failures = dict()
         active_exceptions = list()
-
 
     class TestcaseStatus:
         def __init__(self,name,status,message):
@@ -118,7 +76,7 @@ class Cafy:
                 for exc in Cafy.RunInfo.active_exceptions:
                     new_list.append(exc)
                 Cafy.RunInfo.active_exceptions = list()
-                raise Cafy.CompositeError(new_list)
+                raise CafyException.CompositeError(new_list)
 
             Cafy.RunInfo.current_failures[Cafy.RunInfo.current_testcase] = list()
 

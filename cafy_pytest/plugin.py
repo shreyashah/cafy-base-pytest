@@ -924,7 +924,7 @@ class EmailReport(object):
                 for exception in Cafy.RunInfo.active_exceptions:
                     elist.append(exception)
                 Cafy.RunInfo.active_exceptions = list()
-                raise Cafy.CompositeError(elist,title="Step Failure with multiple errors")
+                raise CafyException.CompositeError(elist,title="Step Failure with multiple errors")
             except:
                 exc_info = sys.exc_info()
                 einfo = _pytest._code.code.ExceptionInfo.from_current()
@@ -1159,6 +1159,7 @@ class EmailReport(object):
                                 if len(base_classes) == 3:
                                     index = 0
                                 base_class_name = base_classes[index].__name__
+
 
                                 #base_class_name = base_classes[1].__name__
                             else:
