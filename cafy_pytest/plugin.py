@@ -917,6 +917,11 @@ class EmailReport(object):
     @pytest.hookimpl(trylast=True, hookwrapper=True)
     def pytest_runtest_makereport(self, item, call):
         report = yield
+        result = report.get_result()
+        if call.when == "teardown":
+            stdout_html = self._convert_to_html(result.capstdout)
+            allure.attach(stdout_html, 'stdout','HTML',None)
+        
         if call.when == "call" and Cafy.RunInfo.active_exceptions:
             try:
                 elist = list()
@@ -936,6 +941,34 @@ class EmailReport(object):
                 result.longrepr = repr
                 report.force_result(result)
 
+    def _convert_to_html(self, contents):
+        """
+        Converts log to HTML format. Adds different colors based on log prefix
+        """
+        ansi_escape = re.compile(r'\x1b[^m]*m')
+
+        result = "<html><head><style>div { white-space: pre; }</style></head>"
+        result += "<body style=\"font-family:'Courier New', Courier, monospace;font-size:14px\">"
+        for raw_line in contents.splitlines():
+            line = ansi_escape.sub('', raw_line)
+            if line.startswith('-Warning'):
+                result += "<div style=\"color:orange;\">"
+            elif line.startswith('-Fail'):
+                result += "<div style=\"color:black;background-color:red;font-weight:bold\">"
+            elif line.startswith('-Error'):
+                result += "<div style=\"color:red;font-weight:bold\">"
+            elif line.startswith('-Liberr'):
+                result += "<div style=\"color:red;font-weight:bold\">"
+            elif line.startswith('-Success'):
+                result += "<div style=\"color:black;background-color:green;\">"
+            elif line.startswith('-Debug'):
+                result += "<div style=\"color:pink\">"
+            else:
+                result += "<div>"
+            result += html.escape(line)
+            result += "</div>"
+        result += "</body></html>"
+        return result
 
     pytest.hookimpl(tryfirst=True)
     def pytest_runtest_logreport(self, report):
@@ -1515,6 +1548,7 @@ class EmailReport(object):
                     allure_report_dir=allure_report_dir)
         #print("Allure Command Line Used: {cmd}".format(cmd=cmd))
         allure_report = os.path.join(allure_report_dir,"index.html")
+        CafyLog.htmlfile_link = allure_report
         allure_html_report = os.path.join(_CafyConfig.allure_server,allure_report.strip("/"))
         self.allure_html_report = allure_html_report
         os.system(cmd)
@@ -1660,6 +1694,11 @@ class CafyReportData(object):
         self.exec_host = platform.node()
         self.python_version = platform.python_version()
         self. platform = platform.platform()
+        try:
+            self.cafykit_release = os.path.basename(os.environ.get("VIRTUAL_ENV"))
+        except:
+            self.cafykit_release = None
+
         self.testbed = None
         self.registration_id = CafyLog.registration_id
         self.submitter = EmailReport.USER

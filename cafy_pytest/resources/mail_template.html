@@ -57,7 +57,25 @@
     <h2>{{report.script_list}}</h2>
     <hr>
 
-      <!-- Run Info -->
+    <!-- Summary -->
+    <h3>Summary</h3>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th><center>Passed</center></th>
+          <th><center>Xpassed</center></th>
+          <th><center>Failed</center></th>
+          <th><center>Skipped</center></th>
+          <th><center>Xfailed</center></th>
+          <th><center>Total</center></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ summary(report) }}
+      </tbody>
+    </table>
+
+    <!-- Run Info -->
 
     <h3>Run Info</h3>
     <table class="table table-bordered">
@@ -84,6 +102,12 @@
       <td>Git commit id</td>
       <td>{{report.git_commit_id}}</td>
     </tr>
+    {% if report.cafykit_release %}
+         <tr>
+      <td>Cafykit Release</td>
+      <td>{{report.cafykit_release}}</td>
+    </tr>
+    {% endif %}
       </tr>
        <tr>
         <td>Script list</td>
@@ -130,6 +154,7 @@
         <td>Exec platform</td>
         <td>{{report.platform}}</td>
       </tr>
+
       <tr>
         <td>Topology file</td>
         <td>{{report.topo_file}}</td>
@@ -142,24 +167,6 @@
         <td>Allure report link</td>
         <td><a href="{{report.htmlprefix}}{{report.allure_report}}">{{report.htmlprefix}}{{report.allure_report}}</a></td>
       </tr>
-      </tbody>
-    </table>
-
-    <!-- Summary -->
-    <h3>Summary</h3>
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th><center>Passed</center></th>
-          <th><center>Xpassed</center></th>
-          <th><center>Failed</center></th>
-          <th><center>Skipped</center></th>
-          <th><center>Xfailed</center></th>
-          <th><center>Total</center></th>
-        </tr>
-      </thead>
-      <tbody>
-        {{ summary(report) }}
       </tbody>
     </table>
 
