@@ -86,12 +86,79 @@
         <td>{{report.testbed}}</td>
       </tr>
       <tr>
-        <td>Registration ID</td>
-        <td>{{report.registration_id}}</td>
-      </tr>
-      <tr>
         <td>Submitter</td>
         <td>{{report.submitter}}</td>
+      </tr>
+      <tr>
+        <td>Topology file</td>
+        <td>{{report.topo_file}}</td>
+      </tr>
+      <tr>
+        <td>Allure report link</td>
+        <td><a href="{{report.htmlprefix}}{{report.allure_report}}">{{report.htmlprefix}}{{report.allure_report}}</a></td>
+      </tr>
+      </tbody>
+    </table>
+
+    <!-- Testcase Status -->
+    <h3>Test Details</h3>
+    <table class="table table-bordered">
+      <col width="25%">
+      <col width="80px">
+      <thead>
+        <tr>
+          <th><left>Testcase Name</left></th>
+          <th><left>Result</left></th>
+          <th><left>Fail Log</left></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ detailed_data(report) }}
+      </tbody>
+    </table>
+
+
+    <!-- Build Info -->
+    <h3>Build Info</h3>
+      <p style="line-height:1.8em; word-wrap:break-word; font-size:13px">
+      <span class="badge">Image</span>
+      &nbsp;{{report.image}}</p>
+    <table class="table table-bordered">
+      <tbody>
+        <tr>
+          <td>XR EFR</td>
+          <td>{{report.xr_efr}}</td>
+        </tr>
+        <tr>
+          <td>XR workspace</td>
+          <td>{{report.xr_ws}}</td>
+        </tr>
+        <tr>
+          <td>Calvados EFR</td>
+          <td>{{report.cal_efr}}</td>
+        </tr>
+        <tr>
+          <td>Calvados workspace</td>
+          <td>{{report.cal_ws}}</td>
+        </tr>
+        {% if report.jenkins_url %}
+        <tr>
+          <td>Jenkins URL</td>
+          <td><a href="{{report.jenkins_url}}">{{report.jenkins_url}}</a></td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <!-- More Run Info -->
+
+    <h3>More Run Info</h3>
+    <table class="table table-bordered">
+      <col width="30%">
+      <tbody>
+      <tr>
+        <td>Registration ID</td>
+        <td>{{report.registration_id}}</td>
       </tr>
        <tr>
         <td>Run directory</td>
@@ -156,73 +223,16 @@
       </tr>
 
       <tr>
-        <td>Topology file</td>
-        <td>{{report.topo_file}}</td>
-      </tr>
-      <tr>
         <td>Archive</td>
         <td>{{report.archive}}</td>
       </tr>
-      <tr>
-        <td>Allure report link</td>
-        <td><a href="{{report.htmlprefix}}{{report.allure_report}}">{{report.htmlprefix}}{{report.allure_report}}</a></td>
-      </tr>
-      </tbody>
-    </table>
-
-    <!-- Testcase Status -->
-    <h3>Test Details</h3>
-    <table class="table table-bordered">
-      <col width="25%">
-      <col width="80px">
-      <thead>
-        <tr>
-          <th><left>Testcase Name</left></th>
-          <th><left>Result</left></th>
-          <th><left>Fail Log</left></th>
-        </tr>
-      </thead>
-      <tbody>
-        {{ detailed_data(report) }}
-      </tbody>
-    </table>
-
-
-    <!-- Build Info -->
-    <h3>Build Info</h3>
-      <p style="line-height:1.8em; word-wrap:break-word; font-size:13px">
-      <span class="badge">Image</span>
-      &nbsp;{{report.image}}</p>
-    <table class="table table-bordered">
-      <tbody>
-        <tr>
-          <td>XR EFR</td>
-          <td>{{report.xr_efr}}</td>
-        </tr>
-        <tr>
-          <td>XR workspace</td>
-          <td>{{report.xr_ws}}</td>
-        </tr>
-        <tr>
-          <td>Calvados EFR</td>
-          <td>{{report.cal_efr}}</td>
-        </tr>
-        <tr>
-          <td>Calvados workspace</td>
-          <td>{{report.cal_ws}}</td>
-        </tr>
-        {% if report.jenkins_url %}
-        <tr>
-          <td>Jenkins URL</td>
-          <td><a href="{{report.jenkins_url}}">{{report.jenkins_url}}</a></td>
-        </tr>
-        {% endif %}
       </tbody>
     </table>
 
     <!-- Detailed Report -->
 
-	{{ detailed_header(report) }}
+    {{ detailed_header(report) }}
 
 </body>
 </html>
+

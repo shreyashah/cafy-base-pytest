@@ -704,8 +704,10 @@ class EmailReport(object):
             part = MIMEText(email_fd.read(), 'html')
             part['Content-Disposition'] = "inline"
             msg.attach(part)
-
-        msg['Subject'] = ("Cafy Report @%s" % CafyLog.work_dir)
+        script_names = list()
+        for script in self.script_list:
+            script_names.append(script.split('/')[-1].replace(".py",""))
+        msg['Subject'] = ("Cafy Report %s" % str(script_names)[2:-2])
         msg['From'] = self.email_from
         mail_to = COMMASPACE.join(self.email_addr_list)
         msg['To'] = mail_to
@@ -920,7 +922,7 @@ class EmailReport(object):
         result = report.get_result()
         if call.when == "teardown":
             stdout_html = self._convert_to_html(result.capstdout)
-            allure.attach(stdout_html, 'stdout','HTML',None)
+            allure.attach(stdout_html, 'test_log','text/html')
         
         if call.when == "call" and Cafy.RunInfo.active_exceptions:
             try:
