@@ -53,7 +53,7 @@ class Cafy:
             super().__exit__(exc_type, exc_val, exc_tb)
             if not self.blocking:
                 if exc_type:
-                    self.logger.error("Step failed here: {exc_type}:{exc_val}".format(
+                    print("Step failed here: {exc_type}:{exc_val}".format(
                         exc_val=exc_val,
                         exc_type=exc_type,
                         exc_tb=exc_tb))
