@@ -62,7 +62,6 @@ if CAFY_REPO is None:
             os.environ['CAFY_REPO'] = CAFY_REPO
             if os.path.exists(os.path.join(CAFY_REPO, 'work', 'pytest_cafy_config.yaml')):
                 os.environ['CAFY_REPO'] = CAFY_REPO
-                print('GIT_REPO variable has been set to correct repo')
             else:
                 msg = 'GIT_REPO has not been set to correct repo'
                 pytest.exit(msg)
@@ -439,6 +438,7 @@ def pytest_configure(config):
         #Write all.log path to terminal
         reporter = TerminalReporter(config, sys.stdout)
         #reporter.write_line("all.log location: %s" %CafyLog.work_dir)
+        reporter.write_line("Virtual Env: %s" %(os.getenv("VIRTUAL_ENV")))
         reporter.write_line("Complete Log Location: %s/all.log" %CafyLog.work_dir)
         reporter.write_line("Registration Id: %s" % CafyLog.registration_id)
 
@@ -931,7 +931,7 @@ class EmailReport(object):
                 for exception in Cafy.RunInfo.active_exceptions:
                     elist.append(exception)
                 Cafy.RunInfo.active_exceptions = list()
-                raise CafyException.CompositeError(elist,title="Step Failure with multiple errors")
+                raise CafyException.CompositeError(elist)
             except:
                 exc_info = sys.exc_info()
                 einfo = _pytest._code.code.ExceptionInfo.from_current()
