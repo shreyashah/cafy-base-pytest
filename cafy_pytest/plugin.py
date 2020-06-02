@@ -25,7 +25,7 @@ from .cafy import Cafy
 
 from _pytest.terminal import TerminalReporter
 from _pytest.runner import runtestprotocol, TestReport
-from _pytest.mark import MarkInfo
+#from _pytest.mark import MarkInfo
 
 from pprint import pprint, pformat
 from enum import Enum
