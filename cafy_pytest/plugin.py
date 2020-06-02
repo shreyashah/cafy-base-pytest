@@ -20,19 +20,21 @@ import inspect
 import yaml
 import pytest
 import allure
-
+import traceback
 from .cafy import Cafy
 
 from _pytest.terminal import TerminalReporter
-from _pytest.runner import runtestprotocol
-#from _pytest.mark import MarkInfo
+from _pytest.runner import runtestprotocol, TestReport
+from _pytest.mark import MarkInfo
 
+from pprint import pprint, pformat
 from enum import Enum
 from tabulate import tabulate
 from shutil import copyfile
 from configparser import ConfigParser
 from datetime import datetime
-from collections import namedtuple, OrderedDict
+from collections import namedtuple, OrderedDict, defaultdict
+from wrapt_timeout_decorator import timeout as wrapt_timeout
 
 from email.utils import COMMASPACE
 from email.mime.text import MIMEText
@@ -62,6 +64,7 @@ if CAFY_REPO is None:
             os.environ['CAFY_REPO'] = CAFY_REPO
             if os.path.exists(os.path.join(CAFY_REPO, 'work', 'pytest_cafy_config.yaml')):
                 os.environ['CAFY_REPO'] = CAFY_REPO
+                print('GIT_REPO variable has been set to correct repo')
             else:
                 msg = 'GIT_REPO has not been set to correct repo'
                 pytest.exit(msg)
@@ -129,6 +132,8 @@ def pytest_addoption(parser):
                     help='smtp server port e.g 25')
     group.addoption('--no-email', dest='no_email', action='store_true',
                     help='if specified no email will be sent')
+    group.addoption('--mail-if-fail', dest='mail_if_fail', action='store_true',
+                    help='if specified, email will be sent only total testcase = passed testcases')
 
     group = parser.getgroup('Terminal Reporting')
     group.addoption('--no-detail-message', dest='no_detail_message', action='store_true',
@@ -138,7 +143,7 @@ def pytest_addoption(parser):
     group.addoption('--work-dir', dest="workdir", metavar="DIR", default=None,
                     help="Path for work dir")
 
-    group.addoption('--report-dir', dest="reportdir",
+    group.addoption('-R','--report-dir', dest="reportdir",
                     metavar="DIR",
                     default=None,
                     help="Path for report dir")
@@ -149,7 +154,7 @@ def pytest_addoption(parser):
                     type=lambda x: is_valid_param(x, file_type='topology_file'),
                     help='Filename of your testbed')
 
-    group.addoption('--test-input-file', action='store', dest='test_input_file',
+    group.addoption('-I', '--test-input-file', action='store', dest='test_input_file',
                     metavar='test_input_file',
                     type=lambda x: is_valid_param(x, file_type='input_file'),
                     help='Filename of your test input file')
@@ -565,7 +570,7 @@ def pytest_collection_modifyitems(session, config, items):
                 log.info("url: {}".format(url))
                 log.info("Calling API service for live logging of reg_id ")
                 params = {"reg_id": CafyLog.registration_id}
-                response = requests.patch(url, json=params, headers=headers)
+                response = requests.patch(url, json=params, headers=headers, timeout=120)
                 if response.status_code == 200:
                     log.info("Calling API service for live logging of reg_id successful")
                 else:
@@ -578,7 +583,7 @@ def pytest_collection_modifyitems(session, config, items):
         #Send the TestCases and its status(upcoming) collected to http://cafy3-dev-lnx:3100 for live logging
         try:
             for item in items:
-                if not item.get_closest_marker('Future'):  #Exclude the Future marked testcases to be shown as upcoming
+                if not item.get_marker('Future'):  #Exclude the Future marked testcases to be shown as upcoming
                     nodeid = item.nodeid.split('::()::')
                     finer_nodeid = nodeid[0].split('::')
                     class_name = finer_nodeid[-1]
@@ -590,7 +595,7 @@ def pytest_collection_modifyitems(session, config, items):
             url = '{0}/api/runs/{1}/cases'.format(os.environ.get('CAFY_API_HOST'), os.environ.get('CAFY_RUN_ID'))
             log.debug("url: {}".format(url))
             log.debug("Calling API service for live logging of collected testcases ")
-            response = requests.post(url, json=CafyLog.collected_testcases, headers=headers)
+            response = requests.post(url, json=CafyLog.collected_testcases, headers=headers, timeout=120)
             if response.status_code == 200:
                 log.info("Calling API service for live logging of collected testcases successful")
             else:
@@ -693,6 +698,8 @@ class EmailReport(object):
 
         # Testcase name and its status dict
         self.testcase_dict = OrderedDict()
+        self.testcase_time = defaultdict(
+            lambda : {'start_time': None, 'end_time': None})
         self.testcase_failtrace_dict = OrderedDict()
 
     def _sendemail(self):
@@ -713,7 +720,7 @@ class EmailReport(object):
         msg['To'] = mail_to
         msg.add_header('Content-Type', 'text/html')
         # fixme: add an option to read config from file rather then CLI
-        with smtplib.SMTP(self.smtp_server, self.smtp_port) as mail_server:
+        with smtplib.SMTP(self.smtp_server, self.smtp_port,timeout=60) as mail_server:
             if self.email_from_passwd:
                 mail_server.ehlo()
                 mail_server.starttls()
@@ -832,7 +839,7 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/initiate_analyzer/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to initialize analyzer" % url)
-                response = requests.post(url, data=params)
+                response = requests.post(url, data=params, timeout=300)
                 if response.status_code == 200:
                     self.log.info("Analyzer initialized")
                     return True
@@ -906,7 +913,7 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/end_test_case/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to check analyzer status" % url)
-                response = requests.get(url, data=params)
+                response = requests.get(url, data=params, timeout=60)
                 if response.status_code == 200:
                     return response.json()['analyzer_status']
                 else:
@@ -989,11 +996,11 @@ class EmailReport(object):
                     try:
                         url = 'http://{0}:5001/registertest/'.format(CafyLog.debug_server)
                         #self.log.info("Calling registration service to start handshake(url:%s" % url)
-                        response = requests.post(url, json=params, headers=headers)
+                        response = requests.post(url, json=params, headers=headers, timeout=300)
                         if response.status_code == 200:
                             self.log.info("Handshake to registration service successful")
                         else:
-                            self.log.error("Handshake to registration server returned code %d " % response.status_code)
+                            self.log.error("Handshake part of registration server returned code %d " % response.status_code)
                     except:
                         self.log.error("Http call to registration service url:%s is not successful" % url)
 
@@ -1381,7 +1388,7 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/startdebug/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to start collecting" % url)
-                response = requests.post(url, json=params, headers=headers)
+                response = requests.post(url, json=params, headers=headers, timeout=1500)
                 if response.status_code == 200:
                     return response
                 else:
@@ -1396,9 +1403,9 @@ class EmailReport(object):
             self.log.info("debug_server name not provided in topo file")
         else:
             try:
-                url = "http://{0}:5003/startrootcause/".format(CafyLog.debug_server)
+                url = "http://{0}:5001/startrootcause/".format(CafyLog.debug_server)
                 self.log.info("Calling RC engine to start rootcause (url:%s)" % url)
-                response = requests.post(url, json=params, headers=headers)
+                response = requests.post(url, json=params, headers=headers, timeout=300)
                 if response.status_code == 200:
                     return response
                 else:
@@ -1523,7 +1530,7 @@ class EmailReport(object):
                   "debug_server_name": CafyLog.debug_server}
         url = 'http://{0}:5001/get_analyzer_log/'.format(CafyLog.debug_server)
         try:
-            response = requests.get(url, data=params)
+            response = requests.get(url, data=params, timeout=300)
             if response is not None and response.status_code == 200:
                 if response.text:
                     if 'Content-Disposition' in response.headers:
@@ -1588,10 +1595,14 @@ class EmailReport(object):
                 url = 'http://{0}:5001/uploadcollectorlogfile/'.format(CafyLog.debug_server)
                 print("url = ", url)
                 self.log.info("Calling registration upload collector logfile service (url:%s)" %url)
-                response = requests.post(url, json=params, headers=headers)
+                response = requests.post(url, json=params, headers=headers, timeout=300)
                 if response is not None and response.status_code == 200:
                     if response.text:
-                        self.log.info ("Debug Collector logs: %s" %(response.text))
+                        summary_log = response.text
+                        if '+'*120 in response.text:
+                            summary_log, verbose_log = response.text.split('+'*120)
+
+                        self.log.info ("Debug Collector logs: %s" %(summary_log))
                         if 'Content-Disposition' in response.headers:
                             debug_collector_log_filename = response.headers['Content-Disposition'].split('filename=')[-1]
                             collector_log_file_full_path = os.path.join(CafyLog.work_dir,debug_collector_log_filename)
@@ -1606,7 +1617,7 @@ class EmailReport(object):
 
                 url = 'http://{0}:5001/deleteuploadedfiles/'.format(CafyLog.debug_server)
                 self.log.info("Calling registration delete upload file service (url:%s)" % url)
-                response = requests.post(url, json=params, headers=headers)
+                response = requests.post(url, json=params, headers=headers, timeout=300)
                 if response.status_code == 200:
                     self.log.info("Topology and input files deleted from registration server")
                 else:
@@ -1615,7 +1626,7 @@ class EmailReport(object):
                 self.log.info("Error in uploading collector logfile")
             try:
                 with open(os.path.join(CafyLog.work_dir, "retest_data.json"), "w") as f:
-                    f.write(json.dumps(self.log.buffer_to_retest))
+                    f.write(json.dumps(self.log.buffer_to_retest, indent=4))
             except Exception as error:
                 self.log.info(error)
 
@@ -1695,7 +1706,7 @@ class CafyReportData(object):
         # Run Info
         self.exec_host = platform.node()
         self.python_version = platform.python_version()
-        self. platform = platform.platform()
+        self.platform = platform.platform()
         try:
             self.cafykit_release = os.path.basename(os.environ.get("VIRTUAL_ENV"))
         except:
@@ -1708,7 +1719,7 @@ class CafyReportData(object):
         self.topo_file = topo_file
         self.run_dir = self.terminalreporter.startdir.strpath
         try:
-            self.git_commit_id = subprocess.check_output(['git', 'rev-parse', 'origin/master']).decode("utf-8").replace('\n', '')
+            self.git_commit_id = subprocess.check_output(['git', 'rev-parse', 'origin/master'], timeout=5).decode("utf-8").replace('\n', '')
         except Exception:
             self.git_commit_id = None
         self.archive = CafyLog.work_dir
@@ -1726,6 +1737,9 @@ class CafyReportData(object):
         self.xpassed = len(xpassed_list)
         self.xfailed = len(xfailed_list)
         self.total = self.passed + self.failed + self.skipped + self.xpassed + self.xfailed
+        if self.terminalreporter.config.option.mail_if_fail is True and self.total == self.passed and self.total != 0:
+            self.terminalreporter.config._email.no_email = True
+
         # testcase summary result
         self.testcase_name = testcase_dict.keys()
         if CafyLog.htmlfile_link:
