@@ -530,20 +530,23 @@ def get_testcase_name(name):
 
 
 def pytest_collection_modifyitems(session, config, items):
-    log = CafyLog("cafy")
-    if config.option.selective_test_file:
+     log = CafyLog("cafy")
+     if config.option.selective_test_file:
         with open(config.option.selective_test_file, 'r') as f:
             content = f.readlines()
             content = [x.split(',')[0] for x in content]
             module_name =  [x.split('::')[0] for x in content]
             selected_nodeids = [x.split('::',1)[-1] for x in content]
-            module_name = [os.path.relpath(x, str(config.rootdir)) for x in module_name]
-            sequence = list(zip(module_name, selected_nodeids ))
-            selected_nodeids = ['::'.join(tup) for tup in sequence]
+            #Keeping the code commented out incase we need to maintain backward compatibility later.
+            #module_name = [os.path.relpath(x, str(config.rootdir)) for x in module_name]
+            #sequence = list(zip(module_name, selected_nodeids ))
+            #selected_nodeids = ['::'.join(tup) for tup in sequence]
             # remove whitespace characters like `\n` at the end of each line
+            selected_nodeids = ['::'+ x for x in selected_nodeids]
             selected_nodeids = [x.rstrip('\n') for x in selected_nodeids]
         #Modify the items list by picking only those whose nodeid exists in selected_nodeids
-        nodeid_pattern = re.compile(r'((?:[\w-]+\/)*[\w-]+\.[\w-]*\:\:[\w-]+\:?\:?\(?\)?\:?\:?[\w-]*)(\[[\w-]+\])?')
+        #nodeid_pattern = re.compile(r'((?:[\w-]+\/)*[\w-]+\.[\w-]*\:\:[\w-]+\:?\:?\(?\)?\:?\:?[\w-]*)(\[[\w-]+\])?')
+        nodeid_pattern = re.compile(r'(\:\:[\w-]+\:?\:?\(?\)?\:?\:?[\w-]*)(\[[\w-]+\])?')
         try:
             items[:] = [item for item in items if nodeid_pattern.match(item.nodeid).group(1) in selected_nodeids]
         except:
@@ -583,7 +586,7 @@ def pytest_collection_modifyitems(session, config, items):
         #Send the TestCases and its status(upcoming) collected to http://cafy3-dev-lnx:3100 for live logging
         try:
             for item in items:
-                if not item.get_marker('Future'):  #Exclude the Future marked testcases to be shown as upcoming
+                if not item.get_closest_marker('Future'):  #Exclude the Future marked testcases to be shown as upcoming
                     nodeid = item.nodeid.split('::()::')
                     finer_nodeid = nodeid[0].split('::')
                     class_name = finer_nodeid[-1]
