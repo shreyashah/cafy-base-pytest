@@ -678,6 +678,7 @@ class EmailReport(object):
         self.topo_file = topo_file
         self.reg_dict = reg_dict
         self.log = CafyLog("cafy")
+        self.rclog = CafyLog("debug-rc")
         self.errored_testcase_count = {}
         self.analyzer_testcase = {}
         self.tabulate_html = None
@@ -1298,8 +1299,8 @@ class EmailReport(object):
                                               "exception_name": rc_exception_name_list}
                                     response = self.invoke_rc_on_failed_testcase(params, headers)
                                     if response is not None and response.status_code == 200:
-                                        if response.text:
-                                            self.log.info("Debug RC logs: %s" % response.text)
+                                        if response.json().get("traffic_logs")::
+                                            self.rclog.info("Debug RC logs: \n%s" % response.json()["traffic_logs"])
                     else:
                         self.log.debug("Type of report obtained is %s. Debug engine is only triggered for reports of type TestReport" %type(report))
 
@@ -1408,7 +1409,7 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/startrootcause/".format(CafyLog.debug_server)
                 self.log.info("Calling RC engine to start rootcause (url:%s)" % url)
-                response = requests.post(url, json=params, headers=headers, timeout=300)
+                response = requests.post(url, json=params, headers=headers, timeout=600)
                 if response.status_code == 200:
                     return response
                 else:
