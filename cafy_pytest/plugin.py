@@ -586,7 +586,7 @@ def pytest_collection_modifyitems(session, config, items):
         #Send the TestCases and its status(upcoming) collected to http://cafy3-dev-lnx:3100 for live logging
         try:
             for item in items:
-                if not item.get_marker('Future'):  #Exclude the Future marked testcases to be shown as upcoming
+                if not item.get_closest_marker('Future'):  #Exclude the Future marked testcases to be shown as upcoming
                     nodeid = item.nodeid.split('::()::')
                     finer_nodeid = nodeid[0].split('::')
                     class_name = finer_nodeid[-1]
