@@ -1299,7 +1299,7 @@ class EmailReport(object):
                                               "exception_name": rc_exception_name_list}
                                     response = self.invoke_rc_on_failed_testcase(params, headers)
                                     if response is not None and response.status_code == 200:
-                                        if response.json().get("traffic_logs")::
+                                        if response.json().get("traffic_logs"):
                                             self.rclog.info("Debug RC logs: \n%s" % response.json()["traffic_logs"])
                     else:
                         self.log.debug("Type of report obtained is %s. Debug engine is only triggered for reports of type TestReport" %type(report))
