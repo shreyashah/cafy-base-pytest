@@ -530,8 +530,8 @@ def get_testcase_name(name):
 
 
 def pytest_collection_modifyitems(session, config, items):
-     log = CafyLog("cafy")
-     if config.option.selective_test_file:
+    log = CafyLog("cafy")
+    if config.option.selective_test_file:
         with open(config.option.selective_test_file, 'r') as f:
             content = f.readlines()
             content = [x.split(',')[0] for x in content]
