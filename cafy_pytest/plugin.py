@@ -23,6 +23,9 @@ import allure
 import traceback
 from .cafy import Cafy
 
+from urllib3 import Retry
+from requests.adapters import HTTPAdapter
+
 from _pytest.terminal import TerminalReporter
 from _pytest.runner import runtestprotocol, TestReport
 #from _pytest.mark import MarkInfo
@@ -239,6 +242,60 @@ def load_config_file(filename=None):
         except:
             return {}
 
+def _requests_retry( url, method, data=None, files=None,  headers=None, timeout=None, **kwargs):
+    """ Retry Connection to server and database.
+
+    Args:
+        url: String of URL .
+        method: String of 'GET', 'POST', 'PUT' or 'DELETE'.
+        **kwargs: Other Response arguments
+
+    Examples:
+        # without JSON serializer
+        _requests_retry(url, 'POST', json=context)
+        # with JSON serializer
+        _requests_retry(url, 'POST', data=json.dumps(context,
+                             default=json_serial))
+    """
+    retries = Retry(total=5,
+                    backoff_factor=1,
+                    status_forcelist=[502, 503, 504, 404])
+    s = requests.Session()
+    s.mount('http://', HTTPAdapter(max_retries=retries))
+    s.mount('https://', HTTPAdapter(max_retries=retries))
+
+    response = None
+    try:
+        if method in ['GET', 'PUT', 'PATCH', 'POST', 'DELETE']:
+            #kwargs['headers'] = {'Content-Type': 'application/json'}
+            if files:
+                kwargs['files'] = files
+            if data:
+                kwargs['data'] = data
+            if headers:
+                kwargs['headers'] = headers
+            if timeout:
+                kwargs['timeout']  = timeout
+            response = s.request(method=method, url=url, **kwargs)
+            print(response.status_code)
+
+
+        if response.status_code != 200:
+            print("HTTP Status Code: {0}\n{1}"
+                              .format(response.status_code, response.text))
+    except requests.exceptions.RetryError as e:
+        # 5XX Database/SQLAlchemy Error handling
+        print(repr(e))
+        print(traceback.format_exc())
+    except requests.exceptions.ConnectionError as e:
+        # Server Connection Error
+        print(repr(e))
+        print(traceback.format_exc())
+    except Exception as e:
+        print("+++++++++++++")
+        print(repr(e))
+        print(traceback.format_exc())
+    return response
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_configure(config):
@@ -410,7 +467,7 @@ def pytest_configure(config):
                 try:
                     url = 'http://{0}:5001/create/'.format(CafyLog.debug_server)
                     log.info("Calling Registration service to register the test execution (url:%s)" %url)
-                    response = requests.post(url, files=files, data=params, timeout = 300)
+                    response = _requests_retry(url, 'POST', files=files, data=params, timeout = 300)
                     if response.status_code == 200:
                         #reg_dict will contain testbed, input, debug files and reg_id
                         reg_dict = response.text # This reg_dict is a string of dict
@@ -424,8 +481,9 @@ def pytest_configure(config):
                     else:
                         reg_dict = {}
                         log.info("Registration server returned code %d " % response.status_code)
-                except:
+                except Exception as e:
                         log.error("Http call to registration service url:%s is not successful" % url)
+                        log.error("Error {}".format(e))
         else:
             reg_dict = {}
 
@@ -843,15 +901,16 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/initiate_analyzer/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to initialize analyzer" % url)
-                response = requests.post(url, data=params, timeout=300)
+                response = _requests_retry(url, 'POST', data=params, timeout=300)
                 if response.status_code == 200:
                     self.log.info("Analyzer initialized")
                     return True
                 else:
                     self.log.error("Analyzer failed %d" % response.status_code)
                     return False
-            except:
+            except Exception as e:
                 self.log.error("Http call to registration service url:%s is not successful" % url)
+                self.log.error("Error {}".format(e))
                 return False
 
     def pytest_runtest_setup(self, item):
@@ -904,8 +963,8 @@ class EmailReport(object):
             if not analyzer_status:
                 self.log.info("Analyzer still working, Continuing Test case")
         except Exception as err:
-            self.log.error("Exception hit while checking analyzer status {}".format(repr(err)))
-            self.log.error("Analysis Failed exiting check")
+            self.log.info("Exception hit while checking analyzer status {}".format(repr(err)))
+            self.log.info("Analysis Failed exiting check")
             analyzer_status = False
 
         return analyzer_status
@@ -917,14 +976,15 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/end_test_case/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to check analyzer status" % url)
-                response = requests.get(url, data=params, timeout=60)
+                response = _requests_retry(url, 'GET', data=params, timeout=60)
                 if response.status_code == 200:
                     return response.json()['analyzer_status']
                 else:
                     self.log.error("Analyzer status check failed %d" % response.status_code)
                     raise CafyException.CafyBaseException("Analyzer is failing")
-            except:
+            except Exception as e:
                 self.log.error("Http call to registration service url:%s is not successful" % url)
+                self.log.error("Error {}".format(e))
                 raise CafyException.CafyBaseException("Analyzer is failing")
 
     @pytest.hookimpl(trylast=True, hookwrapper=True)
@@ -934,7 +994,7 @@ class EmailReport(object):
         if call.when == "teardown":
             stdout_html = self._convert_to_html(result.capstdout)
             allure.attach(stdout_html, 'test_log','text/html')
-        
+
         if call.when == "call" and Cafy.RunInfo.active_exceptions:
             try:
                 elist = list()
@@ -1000,12 +1060,13 @@ class EmailReport(object):
                     try:
                         url = 'http://{0}:5001/registertest/'.format(CafyLog.debug_server)
                         #self.log.info("Calling registration service to start handshake(url:%s" % url)
-                        response = requests.post(url, json=params, headers=headers, timeout=300)
+                        response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=300)
                         if response.status_code == 200:
                             self.log.info("Handshake to registration service successful")
                         else:
                             self.log.error("Handshake part of registration server returned code %d " % response.status_code)
-                    except:
+                    except Exception as e:
+                        self.log.error("Error {}".format(e))
                         self.log.error("Http call to registration service url:%s is not successful" % url)
 
 
@@ -1392,13 +1453,14 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/startdebug/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to start collecting" % url)
-                response = requests.post(url, json=params, headers=headers, timeout=1500)
+                response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=1500)
                 if response.status_code == 200:
                     return response
                 else:
                     self.log.error("start_debug part of handshake server returned code %d" % response.status_code)
                     return None
-            except:
+            except Exception as e:
+                self.log.error("Error {}".format(e))
                 self.log.error("Http call to registration service url:%s is not successful" %url)
                 return None
 
@@ -1409,13 +1471,14 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/startrootcause/".format(CafyLog.debug_server)
                 self.log.info("Calling RC engine to start rootcause (url:%s)" % url)
-                response = requests.post(url, json=params, headers=headers, timeout=600)
+                response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=600)
                 if response.status_code == 200:
                     return response
                 else:
                     self.log.error("startrootcause part of RC engine returned code %d" % response.status_code)
                     return None
-            except:
+            except Exception as e:
+                self.log.error("Error {}".format(e))
                 self.log.error("Http call to root cause service url:%s is not successful" % url)
                 return None
 
@@ -1534,7 +1597,7 @@ class EmailReport(object):
                   "debug_server_name": CafyLog.debug_server}
         url = 'http://{0}:5001/get_analyzer_log/'.format(CafyLog.debug_server)
         try:
-            response = requests.get(url, data=params, timeout=300)
+            response = _requests_retry(url, 'GET', data=params, timeout=300)
             if response is not None and response.status_code == 200:
                 if response.text:
                     if 'Content-Disposition' in response.headers:
@@ -1545,7 +1608,8 @@ class EmailReport(object):
                             self.log.info('{} saved at {}'.format(analyzer_log_filename, CafyLog.work_dir))
                     else:
                         self.log.info("No analyzer log file received")
-        except Exception as err:
+        except Exception as e:
+            self.log.error("Error {}".format(e))
             self.log.info('No Analyzer log file receiver')
 
 
@@ -1574,7 +1638,7 @@ class EmailReport(object):
                 "report_dir": allure_report_dir,
                 "report": allure_report,
             }
-        
+
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_sessionfinish(self):
@@ -1587,7 +1651,7 @@ class EmailReport(object):
         debug_enabled_status = os.getenv("cafykit_debug_enable", None)
 
         self._generate_allure_report()
-        
+
         if debug_enabled_status and CafyLog.registration_id:
             self.log.title("End run for registration id: %s" % CafyLog.registration_id)
             self._get_analyzer_log()
@@ -1599,7 +1663,7 @@ class EmailReport(object):
                 url = 'http://{0}:5001/uploadcollectorlogfile/'.format(CafyLog.debug_server)
                 print("url = ", url)
                 self.log.info("Calling registration upload collector logfile service (url:%s)" %url)
-                response = requests.post(url, json=params, headers=headers, timeout=300)
+                response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=300)
                 if response is not None and response.status_code == 200:
                     if response.text:
                         summary_log = response.text
@@ -1621,12 +1685,13 @@ class EmailReport(object):
 
                 url = 'http://{0}:5001/deleteuploadedfiles/'.format(CafyLog.debug_server)
                 self.log.info("Calling registration delete upload file service (url:%s)" % url)
-                response = requests.post(url, json=params, headers=headers, timeout=300)
+                response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=300)
                 if response.status_code == 200:
                     self.log.info("Topology and input files deleted from registration server")
                 else:
                     self.log.info("Error in deleting topology and input files from registration server")
-            except:
+            except Exception as e:
+                self.log.error("Error {}".format(e))
                 self.log.info("Error in uploading collector logfile")
             try:
                 with open(os.path.join(CafyLog.work_dir, "retest_data.json"), "w") as f:
@@ -1871,3 +1936,4 @@ class LogState(Enum):
     GENERIC = 2
     TESTCASE = 3
     STEP = 3
+
