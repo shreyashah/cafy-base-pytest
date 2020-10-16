@@ -178,7 +178,7 @@ def pytest_addoption(parser):
     group.addoption('--enable-live-update', dest='enable_live_update', action='store_true',
                     help='Variable to enable live logging the status of testcases, default is False')
 
-    group.addoption('--feature-lib-mode', action='store', dest='feature_lib_mode',
+    group.addoption('-M', '--feature-lib-mode', action='store', dest='feature_lib_mode',
                     metavar='feature_lib_mode', help='Feature library mode')
 
     group = parser.getgroup('Cafykit Debug ')
