@@ -1520,16 +1520,11 @@ class EmailReport(object):
                 temp_list.append((v.name, v.status))
 
         headers = ['Testcase_name', 'Status', "Message"]
-        if self.no_detail_message:
-            self.tabulate_result = tabulate(temp_list, headers=headers[0:2], tablefmt='grid')
-        else:
-            self.tabulate_result = tabulate(temp_list, headers=headers, tablefmt='grid')
-
+        self.tabulate_result = tabulate(temp_list, headers=headers[0:2], tablefmt='grid')
 
         terminalreporter.write_line(self.tabulate_result)
         terminalreporter.write_line("Results: {work_dir}".format(work_dir=CafyLog.work_dir))
         terminalreporter.write_line("Reports: {allure_html_report}".format(allure_html_report=self.allure_html_report))
-
 
         self._generate_email_report(terminalreporter)
 
