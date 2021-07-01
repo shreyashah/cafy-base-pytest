@@ -1514,13 +1514,9 @@ class EmailReport(object):
                 message = v.message.chain[0][1].message
             except:
                 message = v.message
-            if not self.no_detail_message:
-                temp_list.append((v.name,v.status,message))
-            else:
-                temp_list.append((v.name, v.status))
-
-        headers = ['Testcase_name', 'Status', "Message"]
-        self.tabulate_result = tabulate(temp_list, headers=headers[0:2], tablefmt='grid')
+            temp_list.append((v.name, v.status))
+        headers = ['Testcase_name', 'Status']
+        self.tabulate_result = tabulate(temp_list, headers=headers[:], tablefmt='grid')
 
         terminalreporter.write_line(self.tabulate_result)
         terminalreporter.write_line("Results: {work_dir}".format(work_dir=CafyLog.work_dir))
