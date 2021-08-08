@@ -245,7 +245,7 @@ def load_config_file(filename=None):
         except:
             return {}
 
-def _requests_retry( url, method, data=None, files=None,  headers=None, timeout=None, **kwargs):
+def _requests_retry(logger, url, method, data=None, files=None,  headers=None, timeout=None, **kwargs):
     """ Retry Connection to server and database.
 
     Args:
@@ -284,19 +284,25 @@ def _requests_retry( url, method, data=None, files=None,  headers=None, timeout=
 
 
         if response.status_code != 200:
-            print("HTTP Status Code: {0}\n{1}"
+            logger.error("HTTP Status Code: {0}\n{1}"
                               .format(response.status_code, response.text))
     except requests.exceptions.RetryError as e:
         # 5XX Database/SQLAlchemy Error handling
-        print(repr(e))
-        print(traceback.format_exc())
+        logger.error(repr(e))
+        logger.error(traceback.format_exc())
+        logger.error("URL and method: {0}\n{1}"
+                       .format(url, method))
     except requests.exceptions.ConnectionError as e:
         # Server Connection Error
-        print(repr(e))
-        print(traceback.format_exc())
+        logger.error(repr(e))
+        logger.error(traceback.format_exc())
+        logger.error("URL and method: {0}\n{1}"
+                       .format(url, method))
     except Exception as e:
-        print(repr(e))
-        print(traceback.format_exc())
+        logger.error(repr(e))
+        logger.error(traceback.format_exc())
+        logger.error("URL and method: {0}\n{1}"
+                       .format(url, method))
     return response
 
 @pytest.hookimpl(tryfirst=True)
@@ -472,7 +478,7 @@ def pytest_configure(config):
                 try:
                     url = 'http://{0}:5001/create/'.format(CafyLog.debug_server)
                     log.info("Calling Registration service to register the test execution (url:%s)" %url)
-                    response = _requests_retry(url, 'POST', files=files, data=params, timeout = 300)
+                    response = _requests_retry(log, url, 'POST', files=files, data=params, timeout = 300)
                     if response.status_code == 200:
                         #reg_dict will contain testbed, input, debug files and reg_id
                         reg_dict = response.text # This reg_dict is a string of dict
@@ -906,7 +912,7 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/initiate_analyzer/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to initialize analyzer" % url)
-                response = _requests_retry(url, 'POST', data=params, timeout=300)
+                response = _requests_retry(self.log, url, 'POST', data=params, timeout=300)
                 if response.status_code == 200:
                     self.log.info("Analyzer initialized")
                     return True
@@ -981,7 +987,7 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/end_test_case/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to check analyzer status" % url)
-                response = _requests_retry(url, 'GET', data=params, timeout=60)
+                response = _requests_retry(self.log, url, 'GET', data=params, timeout=60)
                 if response.status_code == 200:
                     return response.json()['analyzer_status']
                 else:
@@ -1065,7 +1071,7 @@ class EmailReport(object):
                     try:
                         url = 'http://{0}:5001/registertest/'.format(CafyLog.debug_server)
                         #self.log.info("Calling registration service to start handshake(url:%s" % url)
-                        response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=300)
+                        response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=300)
                         if response.status_code == 200:
                             self.log.info("Handshake to registration service successful")
                         else:
@@ -1458,7 +1464,7 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/startdebug/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to start collecting" % url)
-                response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=1500)
+                response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=1500)
                 if response.status_code == 200:
                     return response
                 else:
@@ -1476,7 +1482,7 @@ class EmailReport(object):
             try:
                 url = "http://{0}:5001/startrootcause/".format(CafyLog.debug_server)
                 self.log.info("Calling RC engine to start rootcause (url:%s)" % url)
-                response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=600)
+                response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=600)
                 if response.status_code == 200:
                     return response
                 else:
@@ -1593,7 +1599,7 @@ class EmailReport(object):
                   "debug_server_name": CafyLog.debug_server}
         url = 'http://{0}:5001/get_analyzer_log/'.format(CafyLog.debug_server)
         try:
-            response = _requests_retry(url, 'GET', data=params, timeout=300)
+            response = _requests_retry(self.log, url, 'GET', data=params, timeout=300)
             if response is not None and response.status_code == 200:
                 if response.text:
                     if 'Content-Disposition' in response.headers:
@@ -1659,7 +1665,7 @@ class EmailReport(object):
                 url = 'http://{0}:5001/uploadcollectorlogfile/'.format(CafyLog.debug_server)
                 print("url = ", url)
                 self.log.info("Calling registration upload collector logfile service (url:%s)" %url)
-                response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=300)
+                response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=300)
                 if response is not None and response.status_code == 200:
                     if response.text:
                         summary_log = response.text
@@ -1681,7 +1687,7 @@ class EmailReport(object):
 
                 url = 'http://{0}:5001/deleteuploadedfiles/'.format(CafyLog.debug_server)
                 self.log.info("Calling registration delete upload file service (url:%s)" % url)
-                response = _requests_retry(url, 'POST', json=params, headers=headers, timeout=300)
+                response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=300)
                 if response.status_code == 200:
                     self.log.info("Topology and input files deleted from registration server")
                 else:
