@@ -292,17 +292,20 @@ def _requests_retry(logger, url, method, data=None, files=None,  headers=None, t
         logger.error(traceback.format_exc())
         logger.error("URL and method: {0}\n{1}"
                        .format(url, method))
+        logger.error("kwargs={}".format(kwargs))
     except requests.exceptions.ConnectionError as e:
         # Server Connection Error
         logger.error(repr(e))
         logger.error(traceback.format_exc())
         logger.error("URL and method: {0}\n{1}"
                        .format(url, method))
+        logger.error("kwargs={}".format(kwargs))
     except Exception as e:
         logger.error(repr(e))
         logger.error(traceback.format_exc())
         logger.error("URL and method: {0}\n{1}"
                        .format(url, method))
+        logger.error("kwargs={}".format(kwargs))
     return response
 
 @pytest.hookimpl(tryfirst=True)
