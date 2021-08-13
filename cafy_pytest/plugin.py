@@ -245,6 +245,13 @@ def load_config_file(filename=None):
         except:
             return {}
 
+def is_jsonable(val):
+    try:
+        json.dumps(val)
+        return True
+    except:
+        return False
+
 def _requests_retry(logger, url, method, data=None, files=None,  headers=None, timeout=None, **kwargs):
     """ Retry Connection to server and database.
 
@@ -1401,7 +1408,7 @@ class EmailReport(object):
                                   '__compared_to__']  # We dont want to pass these keys and thie values because they r not json serializable
                 actual_obj_dict = {}
                 for key, val in actual_obj.__dict__.items():
-                    if key not in blacklist_keys:
+                    if key not in blacklist_keys and is_jsonable(val):
                         actual_obj_dict[key] = val
                 if 'columns' in call_dict:
                     failed_attr = call_dict['columns']
