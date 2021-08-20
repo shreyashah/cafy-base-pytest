@@ -1410,6 +1410,8 @@ class EmailReport(object):
                 for key, val in actual_obj.__dict__.items():
                     if key not in blacklist_keys and is_jsonable(val):
                         actual_obj_dict[key] = val
+                    else:
+                        self.log.info("json serializable issue in value for key %s" %key)
                 if 'columns' in call_dict:
                     failed_attr = call_dict['columns']
                 else:
