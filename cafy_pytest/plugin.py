@@ -1080,10 +1080,13 @@ class EmailReport(object):
     def get_final_status(self,mode_list):
         final_mode=""
         if(len(mode_list)>0):
-            final_mode=mode_list[0]
-            for mode in mode_list:
-                final_mode=final_mode and mode
-            return final_mode
+            if 'cli' in mode_list:
+                return 'cli'
+            else:
+                final_mode=mode_list[0]
+                for mode in mode_list:
+                    final_mode=final_mode and mode
+                return final_mode
         return final_mode
 
     """
