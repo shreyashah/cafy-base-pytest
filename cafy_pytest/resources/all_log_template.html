@@ -12,7 +12,7 @@
         white-space: pre;
       }
       .out-toggle {
-        display: block;
+        display: none;
       }
       .info-log {
         color: blue;
@@ -166,6 +166,7 @@
           $(".error-toggle").css("display", "block");
           $(".warning-toggle").css("display", "block");
           $(".success-toggle").css("display", "block");
+          $(".out-toggle").css("display", "none");
           $(".button_Info").text($(".button_Info").data("text-original"));
           $(".button_Warning").text($(".button_Warning").data("text-original"));
           $(".button_Success").text($(".button_Success").data("text-original"));
