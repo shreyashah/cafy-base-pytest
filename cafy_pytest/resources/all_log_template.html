@@ -115,6 +115,12 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script>
       $(document).ready(function(){
+        $(".button_Out").click(function(){
+          $(".out-toggle").toggle();
+        });
+      });
+
+      $(document).ready(function(){
         $(".button_Info").click(function(){
           $(".info-toggle").toggle();
         });
@@ -165,6 +171,7 @@
           $(".button_Success").text($(".button_Success").data("text-original"));
           $(".button_Debug").text($(".button_Debug").data("text-original"));
           $(".button_Error").text($(".button_Error").data("text-original"));
+          $(".button_Out").text($(".button_Out").data("text-original"));
         }); 
       });
     </script>
@@ -193,6 +200,9 @@
           {% endif %}
           {% if "WARNING" in log_grouping.get_log_lines()|map(attribute="type") %}
             <button class="button_Warning" data-text-swap="Enable Warning Filter" data-text-original="Disable Warning Filter">Disable Warning Filter</button>
+          {% endif %}
+          {% if "OUT" in log_grouping.get_log_lines()|map(attribute="type") %}
+            <button class="button_Out" data-text-swap="Disable Out Filter" data-text-original="Enable Out Filter">Enable Out Filter</button>
           {% endif %}
           <div class="panel-body">
             {% for log_line in log_grouping.get_log_lines() %}

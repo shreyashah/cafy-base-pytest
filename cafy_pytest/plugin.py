@@ -254,10 +254,12 @@ def is_jsonable(val):
 
 def _requests_retry(logger, url, method, data=None, files=None,  headers=None, timeout=None, **kwargs):
     """ Retry Connection to server and database.
+
     Args:
         url: String of URL .
         method: String of 'GET', 'POST', 'PUT' or 'DELETE'.
         **kwargs: Other Response arguments
+
     Examples:
         # without JSON serializer
         _requests_retry(url, 'POST', json=context)
@@ -1951,3 +1953,4 @@ class LogState(Enum):
     GENERIC = 2
     TESTCASE = 3
     STEP = 3
+
