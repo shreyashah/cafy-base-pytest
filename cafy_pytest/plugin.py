@@ -1159,13 +1159,14 @@ class EmailReport(object):
     """
     def get_method(self):
         method_list=[]
-        for name, method in inspect.getmembers(CafyLog.hybrid_mode_dict['cls'], inspect.isfunction):
-            try:
-                if method.has_been_called==True and not name.startswith("__") and not name.startswith("_"):
-                    method.has_been_called=False
-                    method_list.append(method)
-            except Exception as e:
-                continue
+        for cls in CafyLog.hybrid_mode_dict['cls']:
+            for name, method in inspect.getmembers(cls, inspect.isfunction):
+                try:
+                   if method.has_been_called==True and not name.startswith("__") and not name.startswith("_"):
+                       method.has_been_called=False
+                       method_list.append(method)
+                except Exception as e:
+                      continue
         return method_list
 
     pytest.hookimpl(tryfirst=True)
