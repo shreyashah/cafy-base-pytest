@@ -819,7 +819,7 @@ class EmailReport(object):
     def _generate_with_template(self, terminalreporter):
         '''generate report using template'''
         #additional field of hybrid_mode_status_dict for html template in order display mode of each testcase in email report
-        if CafyLog.hybrid_mode_dict['mode']:
+        if CafyLog.hybrid_mode_dict.get('mode',None):
             cafy_kwargs = {'terminalreporter': terminalreporter,
                            'testcase_dict': self.testcase_dict,
                            'testcase_failtrace_dict':self.testcase_failtrace_dict,
@@ -1119,9 +1119,9 @@ class EmailReport(object):
                     flag=True
                     break
             if not(flag):
-                if CafyLog.hybrid_mode_dict['mode']=='oc':
+                if CafyLog.hybrid_mode_dict.get('mode',None)=='oc':
                     status='oc'
-                elif CafyLog.hybrid_mode_dict['mode']=='cli':
+                elif CafyLog.hybrid_mode_dict.get('mode',None)=='cli':
                     status='cli'
                 else:
                     status='ydk'
@@ -1159,14 +1159,15 @@ class EmailReport(object):
     """
     def get_method(self):
         method_list=[]
-        for cls in CafyLog.hybrid_mode_dict['cls']:
-            for name, method in inspect.getmembers(cls, inspect.isfunction):
-                try:
-                   if method.has_been_called==True and not name.startswith("__") and not name.startswith("_"):
-                       method.has_been_called=False
-                       method_list.append(method)
-                except Exception as e:
-                      continue
+        if CafyLog.hybrid_mode_dict.get('cls',None):
+            for cls in CafyLog.hybrid_mode_dict['cls']:
+                for name, method in inspect.getmembers(cls, inspect.isfunction):
+                    try:
+                        if method.has_been_called==True and not name.startswith("__") and not name.startswith("_"):
+                            method.has_been_called=False
+                            method_list.append(method)
+                    except Exception as e:
+                        continue
         return method_list
 
     pytest.hookimpl(tryfirst=True)
@@ -1657,7 +1658,7 @@ class EmailReport(object):
                     os.chmod(junitxml_file_path, 0o775)
 
         # if mode present then print the reporting mode of per testcase as separate coloumn Testcase_mode else report same as ealier
-        if CafyLog.hybrid_mode_dict['mode']:
+        if CafyLog.hybrid_mode_dict.get('mode',None):
            terminalreporter.write_line("\n TestCase Summary Status Table")
            hybrid_mode_test_list = []
            hybrid_mode_dict=self.hybrid_mode_status_dict
@@ -1669,6 +1670,7 @@ class EmailReport(object):
            headers = ['Testcase_name', 'Status','Testcase_mode']
            self.tabulate_result = tabulate(hybrid_mode_test_list, headers=headers[:], tablefmt='grid')
            terminalreporter.write_line(self.tabulate_result)
+           self.dump_hybrid_mode_report()
         else:
            terminalreporter.write_line("\n TestCase Summary Status Table")
            temp_list = []
@@ -1682,7 +1684,6 @@ class EmailReport(object):
            headers = ['Testcase_name', 'Status']
            self.tabulate_result = tabulate(temp_list, headers=headers[:], tablefmt='grid')
            terminalreporter.write_line(self.tabulate_result)
-        self.dump_hybrid_mode_report()
         terminalreporter.write_line("Results: {work_dir}".format(work_dir=CafyLog.work_dir))
         terminalreporter.write_line("Reports: {allure_html_report}".format(allure_html_report=self.allure_html_report))
 
