@@ -503,8 +503,8 @@ def pytest_configure(config):
                         reg_dict = {}
                         log.info("Registration server returned code %d " % response.status_code)
                 except Exception as e:
-                        log.error("Http call to registration service url:%s is not successful" % url)
-                        log.error("Error {}".format(e))
+                        log.warning("Http call to registration service url:%s is not successful" % url)
+                        log.warning("Error {}".format(e))
         else:
             reg_dict = {}
 
@@ -1086,10 +1086,10 @@ class EmailReport(object):
                         if response.status_code == 200:
                             self.log.info("Handshake to registration service successful")
                         else:
-                            self.log.error("Handshake part of registration server returned code %d " % response.status_code)
+                            self.log.warning("Handshake part of registration server returned code %d " % response.status_code)
                     except Exception as e:
-                        self.log.error("Error {}".format(e))
-                        self.log.error("Http call to registration service url:%s is not successful" % url)
+                        self.log.warning("Error {}".format(e))
+                        self.log.warning("Http call to registration service url:%s is not successful" % url)
 
 
 
