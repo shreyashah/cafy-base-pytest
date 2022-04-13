@@ -1120,11 +1120,15 @@ class EmailReport(object):
                     break
             if not(flag):
                 if hasattr(CafyLog,"hybrid_mode_dict") and CafyLog.hybrid_mode_dict.get('mode',None)=='oc':
-                    status='oc'
+                    status = 'oc'
                 elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='cli':
-                    status='cli'
-                else:
-                    status='ydk'
+                    status = 'cli'
+                elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='ydk':
+                    status = 'ydk'
+                elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='hybrid_ydk':
+                    status = 'ydk'
+                elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='hybrid_oc':
+                    status = 'oc'
             return status
         except Exception as e:
             return e
