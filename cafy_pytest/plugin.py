@@ -178,7 +178,8 @@ def pytest_addoption(parser):
     group.addoption('--enable-live-update', dest='enable_live_update', action='store_true',
                     help='Variable to enable live logging the status of testcases, default is False')
 
-    group.addoption('-M', '--feature-lib-mode', action='store', dest='feature_lib_mode',
+    group.addoption('-M', '--feature-lib-mode', type=str,
+                    choices=("cli", "ydk", "oc", "hybrid_ydk", "hybrid_oc"), dest='feature_lib_mode',
                     metavar='feature_lib_mode', help='Feature library mode')
 
     group = parser.getgroup('Cafykit Debug ')
@@ -466,7 +467,14 @@ def pytest_configure(config):
             CafyLog.commit_check = True
 
         if config.option.feature_lib_mode:
-             os.environ['feature_lib_mode'] = config.option.feature_lib_mode
+            if config.option.feature_lib_mode == "hybrid_ydk":
+                os.environ['feature_lib_mode'] = "hybrid"
+                os.environ["hybrid_mode"] = "ydk"
+            elif config.option.feature_lib_mode == "hybrid_oc":
+                os.environ['feature_lib_mode'] = "hybrid"
+                os.environ["hybrid_mode"] = "oc"
+            elif config.option.feature_lib_mode in ("cli", "ydk", "oc"):
+                os.environ['feature_lib_mode'] = config.option.feature_lib_mode
 
         #Debug Registration Server code
 
