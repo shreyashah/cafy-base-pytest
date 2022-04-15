@@ -182,6 +182,9 @@ def pytest_addoption(parser):
                     choices=("cli", "ydk", "oc", "hybrid_ydk", "hybrid_oc"), default='ydk', dest='feature_lib_mode',
                     metavar='feature_lib_mode', help='Feature library mode')
 
+    group.addoption('-D', "--unset-feature-lib-mode", action='store_true', dest='unset_feature_lib_mode',
+                    help='Variable to unset feature_lib_mode set by -M arg, default is False')
+
     group = parser.getgroup('Cafykit Debug ')
     group.addoption('--debug-enable', dest='debug_enable', action='store_true',
                     help='Variable to enable cafykit debug, default is False')
@@ -468,14 +471,21 @@ def pytest_configure(config):
 
         if config.option.feature_lib_mode:
             if config.option.feature_lib_mode == "hybrid_ydk":
-                os.environ['feature_lib_mode'] = "hybrid"
+                os.environ["feature_lib_mode"] = "hybrid"
                 os.environ["hybrid_mode"] = "ydk"
             elif config.option.feature_lib_mode == "hybrid_oc":
                 os.environ['feature_lib_mode'] = "hybrid"
                 os.environ["hybrid_mode"] = "oc"
             elif config.option.feature_lib_mode in ("cli", "ydk", "oc"):
-                os.environ['feature_lib_mode'] = config.option.feature_lib_mode
+                os.environ["feature_lib_mode"] = config.option.feature_lib_mode
 
+        if config.option.unset_feature_lib_mode:
+            #unset both env variables: 'feature_lib_mode' and 'hybrid_mode'
+            if os.environ.get("feature_lib_mode", None):
+                del os.environ["feature_lib_mode"]
+            if os.environ.get("hybrid_mode", None):
+                del os.environ["hybrid_mode"]
+                
         #Debug Registration Server code
 
         reg_dict = {}
