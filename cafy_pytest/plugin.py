@@ -521,8 +521,8 @@ def pytest_configure(config):
                         reg_dict = {}
                         log.info("Registration server returned code %d " % response.status_code)
                 except Exception as e:
-                        log.error("Http call to registration service url:%s is not successful" % url)
-                        log.error("Error {}".format(e))
+                        log.warning("Http call to registration service url:%s is not successful" % url)
+                        log.warning("Error {}".format(e))
         else:
             reg_dict = {}
 
@@ -807,6 +807,7 @@ class EmailReport(object):
         #list to find mode such as cli,ydk,oc
         self.mode_list=['cli','ydk','oc']
         self.report_dump={}
+        self.temp_json={}
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -1212,10 +1213,10 @@ class EmailReport(object):
                         if response.status_code == 200:
                             self.log.info("Handshake to registration service successful")
                         else:
-                            self.log.error("Handshake part of registration server returned code %d " % response.status_code)
+                            self.log.warning("Handshake part of registration server returned code %d " % response.status_code)
                     except Exception as e:
-                        self.log.error("Error {}".format(e))
-                        self.log.error("Http call to registration service url:%s is not successful" % url)
+                        self.log.warning("Error {}".format(e))
+                        self.log.warning("Http call to registration service url:%s is not successful" % url)
 
 
 
@@ -1232,14 +1233,14 @@ class EmailReport(object):
             if testcase_name in self.testcase_dict:
                 status = self.testcase_dict[testcase_name].status
             try:
-                temp_json ={}
-                temp_json["name"] = testcase_name
-                temp_json["action"]= self.log.device_actions
-                temp_json['testcase_status'] = status
+                self.temp_json["name"] = testcase_name
+                self.temp_json["action"]= self.log.device_actions
+                self.temp_json['testcase_status'] = status
                 if status != "passed" :
-                    temp_json['error'] = CafyLog.fail_log_msg
-                    temp_json["exception"] = self.log.exception_details
-                self.log.buffer_to_retest.append(temp_json)
+                    self.temp_json['error'] = CafyLog.fail_log_msg
+                    self.temp_json["exception"] = self.log.exception_details
+                self.log.buffer_to_retest.append(self.temp_json)
+                self.temp_json={}
             except Exception as err:
                 self.log.info("Error {} happened while getting deta for retest" .format(err))
 
@@ -1368,8 +1369,12 @@ class EmailReport(object):
                 if testcase_status == 'failed':
                     if report.longrepr:
                         self.testcase_failtrace_dict[testcase_name] = report.longrepr
+                        self.temp_json["stack_exception"]=str(report.longrepr)
+                        self.log.error("stack_exception %s" %report.longrepr)
                     else:
                         self.testcase_failtrace_dict[testcase_name] = None
+                else:
+                    self.temp_json["stack_exception"]= ""
 
 
     def check_call_report(self, item, nextitem):
