@@ -179,7 +179,7 @@ def pytest_addoption(parser):
                     help='Variable to enable live logging the status of testcases, default is False')
 
     group.addoption('-M', '--feature-lib-mode', type=str,
-                    choices=("cli", "ydk", "oc", "hybrid_ydk", "hybrid_oc"), default='ydk', dest='feature_lib_mode',
+                    choices=("cli", "ydk", "oc", "hybrid_ydk", "hybrid_oc"), dest='feature_lib_mode',
                     metavar='feature_lib_mode', help='Feature library mode')
 
     group.addoption('-D', "--unset-feature-lib-mode", action='store_true', dest='unset_feature_lib_mode',
