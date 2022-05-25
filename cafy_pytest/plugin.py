@@ -1884,12 +1884,12 @@ class EmailReport(object):
             except Exception as e:
                 self.log.error("Error {}".format(e))
                 self.log.info("Error in uploading collector logfile")
-            try:
-                with open(os.path.join(CafyLog.work_dir, "retest_data.json"), "w") as f:
-                    f.write(json.dumps(self.log.buffer_to_retest, indent=4))
-            except Exception as error:
-                self.log.info(error)
 
+        try:
+            with open(os.path.join(CafyLog.work_dir, "retest_data.json"), "w") as f:
+                f.write(json.dumps(self.log.buffer_to_retest, indent=4))
+        except Exception as error:
+            self.log.info(error)
         summary_file = os.path.join(self.archive,"summary.json")
         with open(summary_file, 'w') as outfile:
             json.dump(_CafyConfig.summary, outfile, indent=4, sort_keys=True)
