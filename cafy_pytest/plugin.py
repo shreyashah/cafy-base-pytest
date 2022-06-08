@@ -196,6 +196,9 @@ def pytest_addoption(parser):
                     help=' For your additional cafy arguments, A yaml file or\
                      a string of dict')
 
+    group = parser.getgroup('Giso Directory Arguments')
+    group.addoption('--giso-dir', dest='giso_dir', metavar='DIR', default=None,
+                    help='Path for Giso Directory')
 
     group = parser.getgroup('Mongo Device')
     group.addoption('--mongo-learn', dest='mongo_learn', action='store_true',
