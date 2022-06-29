@@ -295,28 +295,28 @@ def _requests_retry(logger, url, method, data=None, files=None,  headers=None, t
 
 
         if response.status_code != 200:
-            logger.error("HTTP Status Code: {0}\n{1}"
+            logger.warning("HTTP Status Code: {0}\n{1}"
                               .format(response.status_code, response.text))
     except requests.exceptions.RetryError as e:
         # 5XX Database/SQLAlchemy Error handling
-        logger.error(repr(e))
-        logger.error(traceback.format_exc())
-        logger.error("URL and method: {0}\n{1}"
+        logger.warning(repr(e))
+        logger.warning(traceback.format_exc())
+        logger.warning("URL and method: {0}\n{1}"
                        .format(url, method))
-        logger.error("kwargs={}".format(kwargs))
+        logger.warning("kwargs={}".format(kwargs))
     except requests.exceptions.ConnectionError as e:
         # Server Connection Error
-        logger.error(repr(e))
-        logger.error(traceback.format_exc())
-        logger.error("URL and method: {0}\n{1}"
+        logger.warning(repr(e))
+        logger.warning(traceback.format_exc())
+        logger.warning("URL and method: {0}\n{1}"
                        .format(url, method))
-        logger.error("kwargs={}".format(kwargs))
+        logger.warning("kwargs={}".format(kwargs))
     except Exception as e:
-        logger.error(repr(e))
-        logger.error(traceback.format_exc())
-        logger.error("URL and method: {0}\n{1}"
+        logger.warning(repr(e))
+        logger.warning(traceback.format_exc())
+        logger.warning("URL and method: {0}\n{1}"
                        .format(url, method))
-        logger.error("kwargs={}".format(kwargs))
+        logger.warning("kwargs={}".format(kwargs))
     return response
 
 @pytest.hookimpl(tryfirst=True)
@@ -960,11 +960,11 @@ class EmailReport(object):
                     self.log.info("Analyzer initialized")
                     return True
                 else:
-                    self.log.error("Analyzer failed %d" % response.status_code)
+                    self.log.warning("Analyzer failed %d" % response.status_code)
                     return False
             except Exception as e:
-                self.log.error("Http call to registration service url:%s is not successful" % url)
-                self.log.error("Error {}".format(e))
+                self.log.warning("Http call to registration service url:%s is not successful" % url)
+                self.log.warning("Error {}".format(e))
                 return False
 
     def pytest_runtest_setup(self, item):
@@ -1633,11 +1633,11 @@ class EmailReport(object):
                 if response.status_code == 200:
                     return response
                 else:
-                    self.log.error("start_debug part of handshake server returned code %d" % response.status_code)
+                    self.log.warning("start_debug part of handshake server returned code %d" % response.status_code)
                     return None
             except Exception as e:
-                self.log.error("Error {}".format(e))
-                self.log.error("Http call to registration service url:%s is not successful" %url)
+                self.log.warning("Error {}".format(e))
+                self.log.warning("Http call to registration service url:%s is not successful" %url)
                 return None
 
     def invoke_rc_on_failed_testcase(self, params, headers):
@@ -1651,11 +1651,11 @@ class EmailReport(object):
                 if response.status_code == 200:
                     return response
                 else:
-                    self.log.error("startrootcause part of RC engine returned code %d" % response.status_code)
+                    self.log.warning("startrootcause part of RC engine returned code %d" % response.status_code)
                     return None
             except Exception as e:
-                self.log.error("Error {}".format(e))
-                self.log.error("Http call to root cause service url:%s is not successful" % url)
+                self.log.warning("Error {}".format(e))
+                self.log.warning("Http call to root cause service url:%s is not successful" % url)
                 return None
 
     #method: To dump the mode report as testcase_mode.json file in work_dir
@@ -1800,7 +1800,7 @@ class EmailReport(object):
                     else:
                         self.log.info("No analyzer log file received")
         except Exception as e:
-            self.log.error("Error {}".format(e))
+            self.log.warning("Error {}".format(e))
             self.log.info('No Analyzer log file receiver')
 
 
@@ -1882,7 +1882,7 @@ class EmailReport(object):
                 else:
                     self.log.info("Error in deleting topology and input files from registration server")
             except Exception as e:
-                self.log.error("Error {}".format(e))
+                self.log.warning("Error {}".format(e))
                 self.log.info("Error in uploading collector logfile")
 
         try:
