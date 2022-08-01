@@ -1669,12 +1669,12 @@ class EmailReport(object):
         with open(os.path.join(path, file_name), 'w') as fp:
             json.dump(self.report_dump,fp)
 
-   #method: To dump the model coverage report as model_coverage.json file in work_dir
-   def dump_model_coverage_report(self):
-        path=CafyLog.work_dir
-        file_name='model_coverage.json'
-        with open(os.path.join(path, file_name), 'w') as fp:
-            json.dump(self.model_coverage_report,fp)
+    #method: To dump the model coverage report as model_coverage.json file in work_dir
+    def dump_model_coverage_report(self):
+       path=CafyLog.work_dir
+       file_name='model_coverage.json'
+       with open(os.path.join(path, file_name), 'w') as fp:
+           json.dump(self.model_coverage_report,fp)
 
     def pytest_terminal_summary(self, terminalreporter):
         '''this hook is the execution point of email plugin'''
