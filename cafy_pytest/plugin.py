@@ -196,6 +196,9 @@ def pytest_addoption(parser):
                     help=' For your additional cafy arguments, A yaml file or\
                      a string of dict')
 
+    group = parser.getgroup('Giso Directory Arguments')
+    group.addoption('--giso-dir', dest='giso_dir', metavar='DIR', default=None,
+                    help='Path for Giso Directory')
 
     group = parser.getgroup('Mongo Device')
     group.addoption('--mongo-learn', dest='mongo_learn', action='store_true',
@@ -334,6 +337,7 @@ def pytest_configure(config):
     CafyLog.test_input_file = config.option.test_input_file
     CafyLog.tag_file = config.option.tag_file
     CafyLog.mongomode=config.option.mongo_mode
+    CafyLog.giso_dir = config.option.giso_dir
     script_list = config.option.file_or_dir
     # register additional markers
     config.addinivalue_line("markers", "Future(name): mark test that are planned for future")
