@@ -826,6 +826,8 @@ class EmailReport(object):
         for script in self.script_list:
             script_names.append(script.split('/')[-1].replace(".py",""))
         msg['Subject'] = ("Cafy Report %s" % str(script_names)[2:-2])
+        # changing the email_from from cafy-infra@cisco.com to nobody@cisco.com
+        self.email_from = "%s@%s" % ("nobody", "cisco.com")
         msg['From'] = self.email_from
         mail_to = COMMASPACE.join(self.email_addr_list)
         msg['To'] = mail_to
