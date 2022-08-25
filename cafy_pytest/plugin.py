@@ -1518,7 +1518,7 @@ class EmailReport(object):
 
                                 headers = {'content-type': 'application/json'}
 
-                                if len(collector_actual_obj_dict_list) > 0:
+                                if len(collector_actual_obj_dict_list) > 0 and report.when!='setup':
                                     params = {"testcase_name": testcase_name, "class_name": base_class_name,
                                               "inherited_classes": inherited_classes,
                                               "reg_dict": self.reg_dict, "actual_obj_name": collector_actual_obj_name_list,
