@@ -812,6 +812,7 @@ class EmailReport(object):
         self.mode_list=['cli','ydk','oc']
         self.report_dump={}
         self.temp_json={}
+        self.model_coverage_report={}
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -1321,6 +1322,9 @@ class EmailReport(object):
                 self.report_dump[testcase_name]['ydk_percentage']= (mode_list.count('ydk')/len(mode_list))*100
                 self.report_dump[testcase_name]['cli_percentage']= (mode_list.count('cli')/len(mode_list))*100
                 self.report_dump[testcase_name]['oc_percentage']= (mode_list.count('oc')/len(mode_list))*100
+            if hasattr(CafyLog,"model_tracker_dict"):
+                self.model_coverage_report[testcase_name]=CafyLog.model_tracker_dict
+                CafyLog.model_tracker_dict={}
 
             self.log.title("Finish test: %s (%s)" %(testcase_name,status))
             self.log.info("="*80)
@@ -1671,6 +1675,13 @@ class EmailReport(object):
         with open(os.path.join(path, file_name), 'w') as fp:
             json.dump(self.report_dump,fp)
 
+    #method: To dump the model coverage report as model_coverage.json file in work_dir
+    def dump_model_coverage_report(self):
+       path=CafyLog.work_dir
+       file_name='model_coverage.json'
+       with open(os.path.join(path, file_name), 'w') as fp:
+           json.dump(self.model_coverage_report,fp)
+
     def pytest_terminal_summary(self, terminalreporter):
         '''this hook is the execution point of email plugin'''
         #self._generate_email_report(terminalreporter)
@@ -1716,7 +1727,7 @@ class EmailReport(object):
            headers = ['Testcase_name', 'Status']
            self.tabulate_result = tabulate(temp_list, headers=headers[:], tablefmt='grid')
            terminalreporter.write_line(self.tabulate_result)
-
+        self.dump_model_coverage_report()
         terminalreporter.write_line("Results: {work_dir}".format(work_dir=CafyLog.work_dir))
         terminalreporter.write_line("Reports: {allure_html_report}".format(allure_html_report=self.allure_html_report))
 
