@@ -1240,14 +1240,13 @@ class EmailReport(object):
             if testcase_name in self.testcase_dict:
                 status = self.testcase_dict[testcase_name].status
             try:
-                self.temp_json["name"] = testcase_name
-                self.temp_json["action"]= self.log.device_actions
-                self.temp_json['testcase_status'] = status
                 if status != "passed" :
+                    self.temp_json["name"] = testcase_name
+                    self.temp_json['testcase_status'] = status
                     self.temp_json['error'] = CafyLog.fail_log_msg
                     self.temp_json["exception"] = self.log.exception_details
-                self.log.buffer_to_retest.append(self.temp_json)
-                self.temp_json={}
+                    self.log.buffer_to_retest.append(self.temp_json)
+                    self.temp_json={}
             except Exception as err:
                 self.log.info("Error {} happened while getting deta for retest" .format(err))
 
