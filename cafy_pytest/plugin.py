@@ -516,9 +516,10 @@ def pytest_configure(config):
                         reg_dict = response.text # This reg_dict is a string of dict
                         reg_dict = json.loads(reg_dict)
                         registration_id = reg_dict['reg_id']
-                        print("Registration ID :%s" %registration_id)
                         log.info("Registration ID: %s" %registration_id)
                         CafyLog.registration_id = registration_id
+                        with open(os.path.join(CafyLog.work_dir, "cafy_reg_id.txt"), "w") as f:
+                            f.write(CafyLog.registration_id)
                         log.title("Start run for registration id: %s" % CafyLog.registration_id)
                         # log.set_registration_id(registration_id=registration_id)
                     else:
