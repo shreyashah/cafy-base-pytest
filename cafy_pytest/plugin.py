@@ -1641,7 +1641,7 @@ class EmailReport(object):
             self.log.info("debug_server name not provided in topo file")
         else:
             try:
-                url = "http://{0}:5001/startdebug/".format(CafyLog.debug_server)
+                url = "http://{0}:5001/startdebugv1/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to start collecting" % url)
                 response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=1500)
                 if response.status_code == 200:
