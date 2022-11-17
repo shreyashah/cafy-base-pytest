@@ -507,7 +507,7 @@ def pytest_configure(config):
                 print("debug_server name not provided in topo file")
             else:
                 try:
-                    url = 'http://{0}:5006/create/'.format(CafyLog.debug_server)
+                    url = 'http://{0}:5001/create/'.format(CafyLog.debug_server)
                     log.info("Calling Registration service to register the test execution (url:%s)" %url)
                     response = _requests_retry(log, url, 'POST', files=files, data=params, timeout = 300)
                     if response.status_code == 200:
@@ -1035,7 +1035,7 @@ class EmailReport(object):
             self.log.info("debug_server name not provided in topo file")
         else:
             try:
-                url = "http://{0}:5006/end_test_case/".format(CafyLog.debug_server)
+                url = "http://{0}:5001/end_test_case/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to check analyzer status" % url)
                 response = _requests_retry(self.log, url, 'GET', data=params, timeout=60)
                 if response.status_code == 200:
@@ -1214,7 +1214,7 @@ class EmailReport(object):
                     self.log.error("debug_server name not provided in topology file")
                 else:
                     try:
-                        url = 'http://{0}:5006/registertest/'.format(CafyLog.debug_server)
+                        url = 'http://{0}:5001/registertest/'.format(CafyLog.debug_server)
                         #self.log.info("Calling registration service to start handshake(url:%s" % url)
                         response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=300)
                         if response.status_code == 200:
@@ -1636,14 +1636,14 @@ class EmailReport(object):
             self.log.info("debug_server name not provided in topo file")
         else:
             try:
-                url = "http://{0}:5006/startdebug/".format(CafyLog.debug_server)
+                url = "http://{0}:5001/startdebug/".format(CafyLog.debug_server)
                 self.log.info("Calling registration service (url:%s) to start collecting" % url)
                 response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=1500)
                 if response.status_code == 200:
                     waiting_time = 0
                     poll_flag = True
                     while(poll_flag):
-                        url_status = "http://{0}:5006/collectionstatus/".format(CafyLog.debug_server)
+                        url_status = "http://{0}:5001/collectionstatus/".format(CafyLog.debug_server)
                         response = _requests_retry(self.log, url_status, 'POST', json=params, headers=headers, timeout=30)
                         if response.status_code == 200:
                             message = response.json()
@@ -1667,7 +1667,7 @@ class EmailReport(object):
             self.log.info("debug_server name not provided in topo file")
         else:
             try:
-                url = "http://{0}:5006/startrootcause/".format(CafyLog.debug_server)
+                url = "http://{0}:5001/startrootcause/".format(CafyLog.debug_server)
                 self.log.info("Calling RC engine to start rootcause (url:%s)" % url)
                 response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=600)
                 if response.status_code == 200:
@@ -1815,7 +1815,7 @@ class EmailReport(object):
     def _get_analyzer_log(self):
         params = {"reg_id": CafyLog.registration_id,
                   "debug_server_name": CafyLog.debug_server}
-        url = 'http://{0}:5006/get_analyzer_log/'.format(CafyLog.debug_server)
+        url = 'http://{0}:5001/get_analyzer_log/'.format(CafyLog.debug_server)
         try:
             response = _requests_retry(self.log, url, 'GET', data=params, timeout=300)
             if response is not None and response.status_code == 200:
@@ -1880,7 +1880,7 @@ class EmailReport(object):
                       "input_file": CafyLog.test_input_file}
             headers = {'content-type': 'application/json'}
             try:
-                url = 'http://{0}:5006/uploadcollectorlogfile/'.format(CafyLog.debug_server)
+                url = 'http://{0}:5001/uploadcollectorlogfile/'.format(CafyLog.debug_server)
                 print("url = ", url)
                 self.log.info("Calling registration upload collector logfile service (url:%s)" %url)
                 response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=300)
@@ -1903,7 +1903,7 @@ class EmailReport(object):
                         else:
                             self.log.info("No collector log file received")
 
-                url = 'http://{0}:5006/deleteuploadedfiles/'.format(CafyLog.debug_server)
+                url = 'http://{0}:5001/deleteuploadedfiles/'.format(CafyLog.debug_server)
                 self.log.info("Calling registration delete upload file service (url:%s)" % url)
                 response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=300)
                 if response.status_code == 200:
