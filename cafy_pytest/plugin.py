@@ -1632,6 +1632,11 @@ class EmailReport(object):
 
 
     def invoke_reg_on_failed_testcase(self, params, headers):
+        """
+        will call debug service api to start collection 
+        :param params: failure details of testcase for given run
+        :param headers: headers associated with api request call
+        """
         if CafyLog.debug_server is None:
             self.log.info("debug_server name not provided in topo file")
         else:
