@@ -1659,6 +1659,9 @@ class EmailReport(object):
                                 waiting_time = waiting_time + 30
                                 if waiting_time > 900:
                                     poll_flag = False
+                        else:
+                            poll_flag = False
+                            self.log.info("collection status api return status other then 200")
                 else:
                     self.log.warning("start_debug part of handshake server returned code %d" % response.status_code)
                     return None
