@@ -294,7 +294,6 @@ def _requests_retry(logger, url, method, data=None, files=None,  headers=None, t
             if timeout:
                 kwargs['timeout']  = timeout
             response = s.request(method=method, url=url, **kwargs)
-            print(response.status_code)
 
 
         if response.status_code != 200:
@@ -489,7 +488,7 @@ def pytest_configure(config):
                 del os.environ["feature_lib_mode"]
             if os.environ.get("hybrid_mode", None):
                 del os.environ["hybrid_mode"]
-                
+
         #Debug Registration Server code
 
         reg_dict = {}
@@ -1633,6 +1632,11 @@ class EmailReport(object):
 
 
     def invoke_reg_on_failed_testcase(self, params, headers):
+        """
+        will call debug service api to start collection 
+        :param params: failure details of testcase for given run
+        :param headers: headers associated with api request call
+        """
         if CafyLog.debug_server is None:
             self.log.info("debug_server name not provided in topo file")
         else:
@@ -1641,7 +1645,20 @@ class EmailReport(object):
                 self.log.info("Calling registration service (url:%s) to start collecting" % url)
                 response = _requests_retry(self.log, url, 'POST', json=params, headers=headers, timeout=1500)
                 if response.status_code == 200:
-                    return response
+                    waiting_time = 0
+                    poll_flag = True
+                    while(poll_flag):
+                        url_status = "http://{0}:5001/collectionstatus/".format(CafyLog.debug_server)
+                        response = _requests_retry(self.log, url_status, 'POST', json=params, headers=headers, timeout=30)
+                        if response.status_code == 200:
+                            message = response.json()
+                            if message["collector_status"] == True:
+                                return response
+                            else:
+                                time.sleep(30)
+                                waiting_time = waiting_time + 30
+                                if waiting_time > 900:
+                                    poll_flag = False
                 else:
                     self.log.warning("start_debug part of handshake server returned code %d" % response.status_code)
                     return None
@@ -2145,4 +2162,3 @@ class LogState(Enum):
     GENERIC = 2
     TESTCASE = 3
     STEP = 3
-
