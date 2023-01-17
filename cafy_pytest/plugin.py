@@ -1331,7 +1331,17 @@ class EmailReport(object):
         #The following if block is executed for @pytest.mark.xfail(run=False) and
         #@@pytest.mark.skip(..) markers because testcases marked with these
         #will never go into call stage
-        if report.when == 'setup' and report.outcome == 'skipped':
+        if report.when == 'setup':
+           testcase_name = self.get_test_name(report.nodeid)
+           testcase_status = report.outcome
+           self.testcase_dict[testcase_name] = Cafy.TestcaseStatus(testcase_name,testcase_status,report.longrepr)
+           if testcase_status == 'failed':
+                if report.longrepr:
+                    self.temp_json["stack_exception"] = str(report.longrepr)
+                else:
+                    self.temp_json["stack_exception"] = ""
+
+        elif report.when == 'setup' and report.outcome == 'skipped':
             if hasattr(report, "wasxfail"):
                 #This is to handle tests that are marked with @pytest.mark.xfail(run=False)
                 #which means don't execute the testcase. Such testcase will never go into the
@@ -1345,12 +1355,11 @@ class EmailReport(object):
                 #report.when=call stage
                 testcase_name = self.get_test_name(report.nodeid)
                 self.testcase_dict[testcase_name] = Cafy.TestcaseStatus(testcase_name,'skipped',report.longrepr)
-            '''
             if report.longrepr:
-                self.testcase_failtrace_dict[testcase_name] = report.longrepr
+                self.temp_json["stack_exception"]=str(report.longrepr)
             else:
-                self.testcase_failtrace_dict[testcase_name] = None
-            '''
+                self.temp_json["stack_exception"]=""
+
         elif report.when == 'call':
             testcase_name = self.get_test_name(report.nodeid)
             if hasattr(report, "wasxfail"):
@@ -1364,14 +1373,10 @@ class EmailReport(object):
                 self.testcase_dict[testcase_name] = Cafy.TestcaseStatus(testcase_name,testcase_status,report.longrepr)
                 if testcase_status == 'failed':
                     self.testcase_failtrace_dict[testcase_name] = CafyLog.fail_log_msg
-                    #print('failmsg = ', self.testcase_failtrace_dict[testcase_name])
-                    #
-                '''
-                if report.longrepr:
-                    self.testcase_failtrace_dict[testcase_name] = report.longrepr
-                else:
-                    self.testcase_failtrace_dict[testcase_name] = None
-                '''
+                    if report.longrepr:
+                        self.temp_json["stack_exception"] = str(report.longrepr)
+                    else:
+                        self.temp_json["stack_exception"] = ""
             else:
                 testcase_status = report.outcome
                 self.testcase_dict[testcase_name] = Cafy.TestcaseStatus(testcase_name,testcase_status,report.longrepr)
@@ -1384,7 +1389,6 @@ class EmailReport(object):
                         self.testcase_failtrace_dict[testcase_name] = None
                 else:
                     self.temp_json["stack_exception"]= ""
-
 
     def check_call_report(self, item, nextitem):
         """
