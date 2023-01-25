@@ -47,10 +47,11 @@ from jinja2 import Template
 from logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
 from utils.cafyexception  import CafyException
+from utils.confest import Call_config
 from debug import DebugLibrary
 import pluggy
 import _pytest
-
+collection_config = Call_config()
 #Check with CAFYKIT_HOME or GIT_REPO or CAFYAP_REPO environment is set,
 #if all are set, CAFYAP_REPO takes precedence
 CAFY_REPO = os.environ.get("CAFYAP_REPO", None)
@@ -813,6 +814,8 @@ class EmailReport(object):
         self.report_dump={}
         self.temp_json={}
         self.model_coverage_report={}
+        self.lsan = True
+        self.collection_manager = None
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -1199,6 +1202,16 @@ class EmailReport(object):
                         continue
         return method_list
 
+    @pytest.fixture(scope='module', autouse=True)
+    def enable_lsan(self, request):
+        if self.lsan:
+           topo_file = CafyLog.topology_file
+           collection_config_file = os.path.join(CafyLog.work_dir, 'collection_config.json')
+           self.collection_manager = collection_config.setup(topo_file,collection_config_file)
+        yield
+        if self.lsan:
+           collection_config.teardown()
+
     pytest.hookimpl(tryfirst=True)
     def pytest_runtest_logreport(self, report):
         testcase_name =  self.get_test_name(report.nodeid)
@@ -1324,6 +1337,8 @@ class EmailReport(object):
             if hasattr(CafyLog,"model_tracker_dict"):
                 self.model_coverage_report[testcase_name]=CafyLog.model_tracker_dict
                 CafyLog.model_tracker_dict={}
+            if self.lsan:
+               self.collection_manager.configure()
 
             self.log.title("Finish test: %s (%s)" %(testcase_name,status))
             self.log.info("="*80)
