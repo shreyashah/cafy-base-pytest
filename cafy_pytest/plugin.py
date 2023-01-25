@@ -48,6 +48,7 @@ from logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
 from utils.cafyexception  import CafyException
 from utils.confest import Call_config
+from utils.collectors.collection_config import config
 from debug import DebugLibrary
 import pluggy
 import _pytest
@@ -1201,11 +1202,12 @@ class EmailReport(object):
                     except Exception as e:
                         continue
         return method_list
-
+ 
     @pytest.fixture(scope='module', autouse=True)
     def enable_lsan(self, request):
         if self.lsan:
            topo_file = CafyLog.topology_file
+           config.get_collection_config()
            collection_config_file = os.path.join(CafyLog.work_dir, 'collection_config.json')
            self.collection_manager = collection_config.setup(topo_file,collection_config_file)
         yield
@@ -1338,6 +1340,7 @@ class EmailReport(object):
                 self.model_coverage_report[testcase_name]=CafyLog.model_tracker_dict
                 CafyLog.model_tracker_dict={}
             if self.lsan:
+               self.log.info(self.collection_manager)
                self.collection_manager.configure()
 
             self.log.title("Finish test: %s (%s)" %(testcase_name,status))
