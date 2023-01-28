@@ -47,12 +47,12 @@ from jinja2 import Template
 from logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
 from utils.cafyexception  import CafyException
-from utils.confest import Call_config
-from utils.collectors.collection_config import config
 from debug import DebugLibrary
 import pluggy
 import _pytest
-collection_config = Call_config()
+from utils.collectors.confest import Config
+from utils.collectors.collection_config import Collection_Config
+collection_setup = Config()
 #Check with CAFYKIT_HOME or GIT_REPO or CAFYAP_REPO environment is set,
 #if all are set, CAFYAP_REPO takes precedence
 CAFY_REPO = os.environ.get("CAFYAP_REPO", None)
@@ -211,6 +211,10 @@ def pytest_addoption(parser):
             metavar='mongo_mode',
             help='Variable to enable mongo read/write, default is None')
 
+    group.addoption('--collection', action='store', dest='collection',
+            type=str, default=None,
+            help='For additional cafy arguments a list in form of string')
+
 def is_valid_param(arg, file_type=None):
     if not arg:
         pytest.exit("%s not provided!" % file_type)
@@ -340,6 +344,7 @@ def pytest_configure(config):
     CafyLog.mongomode=config.option.mongo_mode
     CafyLog.giso_dir = config.option.giso_dir
     script_list = config.option.file_or_dir
+    CafyLog.collection = config.option.collection
     # register additional markers
     config.addinivalue_line("markers", "Future(name): mark test that are planned for future")
     config.addinivalue_line("markers", "Feature(name): mark feature of a testcase")
@@ -815,7 +820,6 @@ class EmailReport(object):
         self.report_dump={}
         self.temp_json={}
         self.model_coverage_report={}
-        self.lsan = True
         self.collection_manager = None
 
     def _sendemail(self):
@@ -1202,17 +1206,35 @@ class EmailReport(object):
                     except Exception as e:
                         continue
         return method_list
- 
+    """
+    Method: enable_collection
+       enable_collection is a pytest fixture function which run in the starting of the setup of
+       testcases at the module level
+    if --collection args passed along with pytest cmd
+       eg: --collection = ['lsan','debug','asan','yang','collection-config']
+    then
+       1: Generate collection config based on the pytest args passed by user
+       2: get the topology file
+       3: call collection setup by passing topology file and collection config list
+       4: collection_setup.setup return collection_manager object which can be used for
+          4.1: collection_manager connect
+          4.2: collection_manager configure
+          4.3: collection_manager dconfigure
+          4.4:  collection_manager disconnect
+    """
     @pytest.fixture(scope='module', autouse=True)
-    def enable_lsan(self, request):
-        if self.lsan:
-           topo_file = CafyLog.topology_file
-           config.get_collection_config()
-           collection_config_file = os.path.join(CafyLog.work_dir, 'collection_config.json')
-           self.collection_manager = collection_config.setup(topo_file,collection_config_file)
+    def enable_collection(self, request):
+        try:
+            if hasattr(CafyLog,"collection") and CafyLog.collection:
+                CafyLog.collection = eval(CafyLog.collection)
+                topo_file = CafyLog.topology_file
+                if "collection-config" in CafyLog.collection:
+                    Collection_Config.generate_collection_config(CafyLog.collection)
+                collection_config_file = os.path.join(CafyLog.work_dir, 'collection_config.json')
+                self.collection_manager = collection_setup.setup(topo_file,collection_config_file)
+        except Exception as e:
+            self.log.error("Collection Failed")
         yield
-        if self.lsan:
-           collection_config.teardown()
 
     pytest.hookimpl(tryfirst=True)
     def pytest_runtest_logreport(self, report):
@@ -1220,7 +1242,7 @@ class EmailReport(object):
         if report.when == 'setup':
             self.log.set_testcase(testcase_name)
             self.log.title("Start test:  %s" %(testcase_name))
-            if self.lsan:
+            if hasattr(CafyLog,"collection") and CafyLog.collection:
                self.collection_manager.connect()
                self.collection_manager.configure()
             #Notify testcase_name to handshake server
@@ -1342,7 +1364,7 @@ class EmailReport(object):
             if hasattr(CafyLog,"model_tracker_dict"):
                 self.model_coverage_report[testcase_name]=CafyLog.model_tracker_dict
                 CafyLog.model_tracker_dict={}
-            if self.lsan:
+            if hasattr(CafyLog,"collection") and CafyLog.collection:
                self.collection_manager.disconnect()
             self.log.title("Finish test: %s (%s)" %(testcase_name,status))
             self.log.info("="*80)
