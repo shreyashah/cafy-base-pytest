@@ -821,6 +821,7 @@ class EmailReport(object):
         self.temp_json={}
         self.model_coverage_report={}
         self.collection_manager = None
+        self.collection_report = {'model_coverage':None,'collector_lsan':None,'collector_asan':None,'collector_yang':None}
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -859,13 +860,15 @@ class EmailReport(object):
                            'testcase_failtrace_dict':self.testcase_failtrace_dict,
                            'archive': self.archive,
                            'topo_file': self.topo_file,
+                           'collection_report': self.collection_report,
                            'hybrid_mode_status_dict':self.hybrid_mode_status_dict}
         else:
             cafy_kwargs = {'terminalreporter': terminalreporter,
                            'testcase_dict': self.testcase_dict,
                            'testcase_failtrace_dict':self.testcase_failtrace_dict,
                            'archive': self.archive,
-                           'topo_file': self.topo_file}
+                           'topo_file': self.topo_file,
+                           'collection_report': self.collection_report}
         report = CafyReportData(**cafy_kwargs)
         setattr(report,"tabulate_html", self.tabulate_html)
         template_file = os.path.join(self.CURRENT_DIR,
@@ -1747,6 +1750,17 @@ class EmailReport(object):
        with open(os.path.join(path, file_name), 'w') as fp:
            json.dump(self.model_coverage_report,fp)
 
+    def collect_collection_report(self):
+        path=CafyLog.work_dir
+        if os.path.exists(os.path.join(path, 'model_coverage.json')):
+            self.collection_report['model_coverage'] = os.path.join(path, 'model_coverage.json')
+        if os.path.exists(os.path.join(path, 'lsan')):
+            self.collection_report['collector_lsan'] = os.path.join(path, 'lsan')
+        if os.path.exists(os.path.join(path, 'asan')):
+            self.collection_report['collector_asan'] = os.path.join(path, 'asan')
+        if os.path.exists(os.path.join(path, 'yang')):
+            self.collection_report['collector_yang'] = os.path.join(path, 'yang')
+
     def pytest_terminal_summary(self, terminalreporter):
         '''this hook is the execution point of email plugin'''
         #self._generate_email_report(terminalreporter)
@@ -1795,7 +1809,7 @@ class EmailReport(object):
         self.dump_model_coverage_report()
         terminalreporter.write_line("Results: {work_dir}".format(work_dir=CafyLog.work_dir))
         terminalreporter.write_line("Reports: {allure_html_report}".format(allure_html_report=self.allure_html_report))
-
+        self.collect_collection_report()
         self._generate_email_report(terminalreporter)
 
         if not self.no_email:
@@ -2012,11 +2026,12 @@ class CafyReportData(object):
     testcase = namedtuple('testcase', ['name', 'result', 'fail_log', 'url'])
     summary = namedtuple('summary', ['passed', 'failed', 'not_run', 'total'])
 
-    def __init__(self, terminalreporter, testcase_dict, testcase_failtrace_dict, archive, topo_file,hybrid_mode_status_dict=None):
+    def __init__(self, terminalreporter, testcase_dict, testcase_failtrace_dict, archive, topo_file, hybrid_mode_status_dict=None, collection_report=None):
         self.terminalreporter = terminalreporter
         self.testcase_dict = testcase_dict
         self.testcase_failtrace_dict = testcase_failtrace_dict
         self.hybrid_mode_status_dict=hybrid_mode_status_dict
+        self.collection_report_dict = collection_report
         self.start = EmailReport.START
         self.start_time = EmailReport.START_TIME
         # Basic details
