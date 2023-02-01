@@ -343,7 +343,7 @@ def pytest_configure(config):
     CafyLog.mongomode=config.option.mongo_mode
     CafyLog.giso_dir = config.option.giso_dir
     script_list = config.option.file_or_dir
-    collection_list = eval(config.option.collection)
+    collection_list = config.option.collection
     # register additional markers
     config.addinivalue_line("markers", "Future(name): mark test that are planned for future")
     config.addinivalue_line("markers", "Feature(name): mark feature of a testcase")
@@ -823,7 +823,9 @@ class EmailReport(object):
         self.model_coverage_report={}
         self.collection_manager = None
         self.collection_report = {'model_coverage':None,'collector_lsan':None,'collector_asan':None,'collector_yang':None}
-        self.collection = collection_list
+        self.collection = None
+        if collection_list:
+            self.collection = eval(collection_list)
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
