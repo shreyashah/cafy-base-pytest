@@ -51,7 +51,6 @@ from debug import DebugLibrary
 import pluggy
 import _pytest
 from utils.collectors.confest import Config
-from utils.collectors.collection_config import Collection_Config
 collection_setup = Config()
 #Check with CAFYKIT_HOME or GIT_REPO or CAFYAP_REPO environment is set,
 #if all are set, CAFYAP_REPO takes precedence
@@ -213,7 +212,7 @@ def pytest_addoption(parser):
 
     group.addoption('--collection', action='store', dest='collection',
             type=str, default=None,
-            help='For additional cafy arguments a list in form of string')
+            help='For additional cafy arguments to enable collection')
 
 def is_valid_param(arg, file_type=None):
     if not arg:
@@ -344,7 +343,7 @@ def pytest_configure(config):
     CafyLog.mongomode=config.option.mongo_mode
     CafyLog.giso_dir = config.option.giso_dir
     script_list = config.option.file_or_dir
-    CafyLog.collection = config.option.collection
+    collection_list = eval(config.option.collection)
     # register additional markers
     config.addinivalue_line("markers", "Future(name): mark test that are planned for future")
     config.addinivalue_line("markers", "Feature(name): mark feature of a testcase")
@@ -545,7 +544,9 @@ def pytest_configure(config):
                                     no_email,
                                     no_detail_message,
                                     topo_file,
-                                    script_list, reg_dict)
+                                    script_list,
+                                    reg_dict,
+                                    collection_list)
         config.pluginmanager.register(config._email)
 
         #Write all.log path to terminal
@@ -754,7 +755,7 @@ class EmailReport(object):
     START_TIME = time.asctime(time.localtime(START.timestamp()))
 
     def __init__(self, email_addr_list, email_from, email_from_passwd,
-                 smtp_server, smtp_port, no_email, no_detail_message, topo_file, script_list, reg_dict):
+                 smtp_server, smtp_port, no_email, no_detail_message, topo_file, script_list, reg_dict, collection_list):
         '''
         @param email_addr_list: list of email address to which email needs to
         be sent.
@@ -822,6 +823,7 @@ class EmailReport(object):
         self.model_coverage_report={}
         self.collection_manager = None
         self.collection_report = {'model_coverage':None,'collector_lsan':None,'collector_asan':None,'collector_yang':None}
+        self.collection = collection_list
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -1209,6 +1211,22 @@ class EmailReport(object):
                     except Exception as e:
                         continue
         return method_list
+
+    """
+    Method: generate_collection_config
+       Take collection_config_list and generate
+       collection_config json
+    """
+    def generate_collection_config(self,collection_config_list):
+        collection_config = {'debug': {'enabled': False}, 'lsan': {'enabled': False}, 'asan':{'enabled': False},'yang': {'enabled': False}}
+        for config_key in collection_config_list:
+            if config_key in collection_config:
+                collection_config[config_key]['enabled'] = True
+        path=CafyLog.work_dir
+        file_name='collection_config.json'
+        with open(os.path.join(path, file_name), 'w') as fp:
+            json.dump(collection_config,fp)
+
     """
     Method: enable_collection
        enable_collection is a pytest fixture function which run in the starting of the setup of
@@ -1228,16 +1246,14 @@ class EmailReport(object):
     @pytest.fixture(scope='module', autouse=True)
     def enable_collection(self, request):
         try:
-            if hasattr(CafyLog,"collection") and CafyLog.collection:
-                CafyLog.collection = eval(CafyLog.collection)
+            if self.collection:
                 topo_file = CafyLog.topology_file
-                if "collection-config" in CafyLog.collection:
-                    Collection_Config.generate_collection_config(CafyLog.collection)
+                if "collection-config" in self.collection:
+                    self.generate_collection_config(self.collection)
                 collection_config_file = os.path.join(CafyLog.work_dir, 'collection_config.json')
                 self.collection_manager = collection_setup.setup(topo_file,collection_config_file)
         except Exception as e:
             self.log.error("Collection Failed")
-        yield
 
     pytest.hookimpl(tryfirst=True)
     def pytest_runtest_logreport(self, report):
@@ -1245,7 +1261,7 @@ class EmailReport(object):
         if report.when == 'setup':
             self.log.set_testcase(testcase_name)
             self.log.title("Start test:  %s" %(testcase_name))
-            if hasattr(CafyLog,"collection") and CafyLog.collection:
+            if self.collection:
                self.collection_manager.connect()
                self.collection_manager.configure()
             #Notify testcase_name to handshake server
@@ -1367,7 +1383,7 @@ class EmailReport(object):
             if hasattr(CafyLog,"model_tracker_dict"):
                 self.model_coverage_report[testcase_name]=CafyLog.model_tracker_dict
                 CafyLog.model_tracker_dict={}
-            if hasattr(CafyLog,"collection") and CafyLog.collection:
+            if self.collection:
                self.collection_manager.disconnect()
             self.log.title("Finish test: %s (%s)" %(testcase_name,status))
             self.log.info("="*80)
