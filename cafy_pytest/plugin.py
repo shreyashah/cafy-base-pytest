@@ -1386,6 +1386,7 @@ class EmailReport(object):
                 self.model_coverage_report[testcase_name]=CafyLog.model_tracker_dict
                 CafyLog.model_tracker_dict={}
             if self.collection:
+               self.collection_manager.deconfigure()
                self.collection_manager.disconnect()
             self.log.title("Finish test: %s (%s)" %(testcase_name,status))
             self.log.info("="*80)
