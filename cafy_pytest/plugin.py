@@ -1298,7 +1298,12 @@ class EmailReport(object):
                     self.log.info('Analyzer is not invoked as testcase failed in setup')
             status = "unknown"
             if testcase_name in self.testcase_dict:
-                status = self.testcase_dict[testcase_name].status
+                # if error occur during module teardown then marking status as failed and adding stack_exception
+                if report.longrepr:
+                    status = 'failed'
+                    self.temp_json["stack_exception"] = str(report.longrepr)
+                else:
+                    status = self.testcase_dict[testcase_name].status
             try:
                 if status != "passed" :
                     self.temp_json["name"] = testcase_name
