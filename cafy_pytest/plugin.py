@@ -211,7 +211,7 @@ def pytest_addoption(parser):
             help='Variable to enable mongo read/write, default is None')
 
     group.addoption('--collection', action='store', dest='collection',
-            type=str, default=None,
+            type=str, nargs='+', default=[],
             help='For additional cafy arguments to enable collection')
 
 def is_valid_param(arg, file_type=None):
@@ -343,7 +343,9 @@ def pytest_configure(config):
     CafyLog.mongomode=config.option.mongo_mode
     CafyLog.giso_dir = config.option.giso_dir
     script_list = config.option.file_or_dir
-    collection_list = config.option.collection
+    collection_list = []
+    for item in config.option.collection:
+        collection_list.extend(item.split(","))
     # register additional markers
     config.addinivalue_line("markers", "Future(name): mark test that are planned for future")
     config.addinivalue_line("markers", "Feature(name): mark feature of a testcase")
@@ -823,9 +825,7 @@ class EmailReport(object):
         self.model_coverage_report={}
         self.collection_manager = None
         self.collection_report = {'model_coverage':None,'collector_lsan':None,'collector_asan':None,'collector_yang':None}
-        self.collection = None
-        if collection_list:
-            self.collection = eval(collection_list)
+        self.collection = collection_list
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -1250,11 +1250,9 @@ class EmailReport(object):
         try:
             if self.collection:
                 topo_file = CafyLog.topology_file
-                if "collection-config" in self.collection:
-                    self.generate_collection_config(self.collection)
+                self.generate_collection_config(self.collection)
                 collection_config_file = os.path.join(CafyLog.work_dir, 'collection_config.json')
                 self.collection_manager = collection_setup.setup(topo_file,collection_config_file)
-                self.collection_manager.connect()
                 self.collection_manager.configure()
         except Exception as e:
             self.log.error("Collection Failed")
@@ -2012,7 +2010,6 @@ class EmailReport(object):
 
         if self.collection:
             self.collection_manager.deconfigure()
-            self.collection_manager.disconnect()
         '''
         line_regex = re.compile(r"\-\w*\-{1,}\-\d{4}\-\d{2}\-\d{2}T\d*\-\d*\-\d*\[([\w\-:]*)\](\[.*\])?>")
         log_filename = os.path.join(CafyLog.work_dir, 'all.log')
