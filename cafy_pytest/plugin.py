@@ -1588,8 +1588,7 @@ class EmailReport(object):
 
                                 headers = {'content-type': 'application/json'}
 
-                                if len(collector_actual_obj_dict_list) > 0 and report.when=='setup' and self.debug_collector == False:
-                                    self.debug_collector = True
+                                if len(collector_actual_obj_dict_list) > 0:
                                     params = {"testcase_name": testcase_name, "class_name": base_class_name,
                                               "inherited_classes": inherited_classes,
                                               "reg_dict": self.reg_dict, "actual_obj_name": collector_actual_obj_name_list,
@@ -1597,10 +1596,17 @@ class EmailReport(object):
                                               "failed_attr": collector_failed_attribute_list,
                                               "debug_server_name": CafyLog.debug_server,
                                               "exception_name": collector_exception_name_list}
-                                    response = self.invoke_reg_on_failed_testcase(params, headers)
-                                    if response is not None and response.status_code == 200:
-                                        if response.text:
-                                            self.log.info("Debug Collector logs: %s" % response.text)
+                                    if report.when=='setup' and self.debug_collector == False:
+                                        self.debug_collector = True
+                                        response = self.invoke_reg_on_failed_testcase(params, headers)
+                                        if response is not None and response.status_code == 200:
+                                            if response.text:
+                                                self.log.info("Debug Collector logs: %s" % response.text)
+                                    else:
+                                        response = self.invoke_reg_on_failed_testcase(params, headers)
+                                        if response is not None and response.status_code == 200:
+                                            if response.text:
+                                                self.log.info("Debug Collector logs: %s" % response.text)
 
                                 if len(rc_actual_obj_dict_list) > 0:
                                     params = {"testcase_name": testcase_name, "class_name": base_class_name,
