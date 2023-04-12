@@ -1596,17 +1596,19 @@ class EmailReport(object):
                                               "failed_attr": collector_failed_attribute_list,
                                               "debug_server_name": CafyLog.debug_server,
                                               "exception_name": collector_exception_name_list}
-                                    if report.when=='setup' and self.debug_collector == False:
-                                        self.debug_collector = True
+                                    if report.when == 'setup':
+                                        if hasattr(node.parent, 'cls') and self.debug_collector == False:
+                                            self.debug_collector = True
+                                            response = self.invoke_reg_on_failed_testcase(params, headers)
+                                            if response is not None and response.status_code == 200:
+                                               if response.text:
+                                                   self.log.info("Debug Collector logs: %s" % response.text)
+                                    elif report.when == 'call':
                                         response = self.invoke_reg_on_failed_testcase(params, headers)
                                         if response is not None and response.status_code == 200:
                                             if response.text:
                                                 self.log.info("Debug Collector logs: %s" % response.text)
-                                    else:
-                                        response = self.invoke_reg_on_failed_testcase(params, headers)
-                                        if response is not None and response.status_code == 200:
-                                            if response.text:
-                                                self.log.info("Debug Collector logs: %s" % response.text)
+
 
                                 if len(rc_actual_obj_dict_list) > 0:
                                     params = {"testcase_name": testcase_name, "class_name": base_class_name,
