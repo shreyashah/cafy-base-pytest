@@ -826,6 +826,7 @@ class EmailReport(object):
         self.collection_manager = None
         self.collection_report = {'model_coverage':None,'collector_lsan':None,'collector_asan':None,'collector_yang':None}
         self.collection = collection_list
+        self.debug_collector = False
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -1587,7 +1588,8 @@ class EmailReport(object):
 
                                 headers = {'content-type': 'application/json'}
 
-                                if len(collector_actual_obj_dict_list) > 0 and report.when!='setup':
+                                if len(collector_actual_obj_dict_list) > 0 and report.when=='setup' and self.debug_collector == False:
+                                    self.debug_collector = True
                                     params = {"testcase_name": testcase_name, "class_name": base_class_name,
                                               "inherited_classes": inherited_classes,
                                               "reg_dict": self.reg_dict, "actual_obj_name": collector_actual_obj_name_list,
