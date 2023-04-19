@@ -56,6 +56,7 @@ collection_setup = Config()
 #if all are set, CAFYAP_REPO takes precedence
 CAFY_REPO = os.environ.get("CAFYAP_REPO", None)
 setattr(pytest,"allure",allure)
+from .cafy_pdb import CafyPdb
 if CAFY_REPO is None:
     #If CAFYAP_REPO is not set, check if GIT_REPO or CAFYKIT_HOME is set
     #If both GIT_REPO and CAFYKIT_HOME are set, CAFYKIT_HOME takes precedence
@@ -214,6 +215,11 @@ def pytest_addoption(parser):
             type=str, nargs='+', default=[],
             help='For additional cafy arguments to enable collection')
 
+    group = parser.getgroup('Cafy PDB ')
+    group.addoption('--cafypdb', dest='cafypdb', action='store_true',
+                    help='Variable to enable cafy PDB, default is False')
+
+
 def is_valid_param(arg, file_type=None):
     if not arg:
         pytest.exit("%s not provided!" % file_type)
@@ -346,6 +352,7 @@ def pytest_configure(config):
     collection_list = []
     for item in config.option.collection:
         collection_list.extend(item.split(","))
+    cafypdb = config.option.cafypdb
     # register additional markers
     config.addinivalue_line("markers", "Future(name): mark test that are planned for future")
     config.addinivalue_line("markers", "Feature(name): mark feature of a testcase")
@@ -548,7 +555,8 @@ def pytest_configure(config):
                                     topo_file,
                                     script_list,
                                     reg_dict,
-                                    collection_list)
+                                    collection_list,
+                                    cafypdb)
         config.pluginmanager.register(config._email)
 
         #Write all.log path to terminal
@@ -757,7 +765,7 @@ class EmailReport(object):
     START_TIME = time.asctime(time.localtime(START.timestamp()))
 
     def __init__(self, email_addr_list, email_from, email_from_passwd,
-                 smtp_server, smtp_port, no_email, no_detail_message, topo_file, script_list, reg_dict, collection_list):
+                 smtp_server, smtp_port, no_email, no_detail_message, topo_file, script_list, reg_dict, collection_list, cafypdb):
         '''
         @param email_addr_list: list of email address to which email needs to
         be sent.
@@ -827,6 +835,7 @@ class EmailReport(object):
         self.collection_report = {'model_coverage':None,'collector_lsan':None,'collector_asan':None,'collector_yang':None}
         self.collection = collection_list
         self.debug_collector = False
+        self.cafypdb = cafypdb
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -1486,6 +1495,17 @@ class EmailReport(object):
         return True
 
     def pytest_exception_interact(self, node, call, report):
+        '''
+        if cafypdb enabled using --cafypdb then on exception or error init Custom pdb class
+        custom pdb class CafyPdb
+           1: override the default pdb into custom cafypdb
+           2: get execution server ip and port
+           3: invoke Remote connection for cafypdb (Remote Debugging)
+        '''
+        if self.cafypdb:
+            debugger = CafyPdb()
+            debugger.set_trace()
+
         if report.failed:
             CafyLog().fail(str(call.excinfo))
             if report.outcome == 'failed':
