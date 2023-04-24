@@ -1503,8 +1503,15 @@ class EmailReport(object):
            3: invoke Remote connection for cafypdb (Remote Debugging)
         '''
         if self.cafypdb:
-            debugger = CafyPdb()
-            debugger.set_trace()
+            try:
+                #Get the traceback object from the excinfo attribute of the call object
+                exc_tb = call.excinfo.tb
+                # Create an instance of Cafy debugger
+                debugger = CafyPdb()
+                #Start the Cafy Debugger
+                debugger.post_mortem(exc_tb)
+            except Exception as e:
+                self.log.info("Cafy Debugger Promt Failed {}".format(e))
 
         if report.failed:
             CafyLog().fail(str(call.excinfo))

@@ -1,5 +1,4 @@
 import pdb
-import sys
 import os
 import re
 from logger.cafylog import CafyLog
@@ -7,7 +6,6 @@ from topology.topo_mgr.topo_mgr import Topology
 from remote_pdb import RemotePdb
 import socket
 import threading
-
 
 class CafyPdb(pdb.Pdb):
     remote_pdb_started = False
@@ -21,9 +19,20 @@ class CafyPdb(pdb.Pdb):
             'Router': ['show_routers', 'show_router_info'],
             'Device': ['show_devices', 'show_connected_devices']
         }
-        if not CafyPdb.remote_pdb_started:
-            self.remote_pdb_thread = threading.Thread(target=self.start_remote_pdb)
-            self.remote_pdb_thread.start()
+
+    def post_mortem(self, traceback):
+        """
+        Method post_mortem
+        :param traceback: tb frame of exception
+        :return: start debugger loop
+        """
+        #resets the state of the debugger. It clears the list of breakpoints and sets the current frame
+        self.reset()
+        #start remote cafypdb connection
+        if CafyPdb.remote_pdb_started == False:
+            self.start_remote_pdb()
+        #enter into interactive debugging loop
+        self.interaction(None, traceback)
 
     def do_help(self, arg=None):
         """
@@ -313,13 +322,12 @@ class CafyPdb(pdb.Pdb):
         """
         server_ip_address = self.get_server_ip()
         avilable_port = self.find_available_port()
-        self.send_notification(server_ip_address,avilable_port)
         CafyPdb.remote_pdb_started = True
+        self.send_notification(server_ip_address,avilable_port)
         #calling remote pdb connection 
         print(server_ip_address)
         print(avilable_port)
         RemotePdb('0.0.0.0', avilable_port, patch_stdstreams=True)
-        self.set_trace(sys._getframe().f_back)
 
     def get_server_ip(self):
         """
