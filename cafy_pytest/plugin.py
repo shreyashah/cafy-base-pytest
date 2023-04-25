@@ -57,6 +57,8 @@ collection_setup = Config()
 CAFY_REPO = os.environ.get("CAFYAP_REPO", None)
 setattr(pytest,"allure",allure)
 from .cafy_pdb import CafyPdb
+from remote_pdb import RemotePdb
+import socket
 if CAFY_REPO is None:
     #If CAFYAP_REPO is not set, check if GIT_REPO or CAFYKIT_HOME is set
     #If both GIT_REPO and CAFYKIT_HOME are set, CAFYKIT_HOME takes precedence
@@ -836,6 +838,7 @@ class EmailReport(object):
         self.collection = collection_list
         self.debug_collector = False
         self.cafypdb = cafypdb
+        self.remote_pdb = False
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -1494,6 +1497,56 @@ class EmailReport(object):
         self.check_call_report(item, nextitem)
         return True
 
+    def start_remote_pdb(self):
+        """
+        Method start_remote_pdb
+        :param arg: None
+        :return: remote connection
+        """
+        server_ip_address = self.get_server_ip()
+        avilable_port = self.find_available_port()
+        #ToDo
+        #self.send_notification(server_ip_address,avilable_port)
+        self.log.info('Execution Server Ip for Remote Pdb Connection:{}'.format(server_ip_address))
+        self.log.info('Avialable Port for Remote Pdb connection:{}'.format(avilable_port))
+        RemotePdb('0.0.0.0', avilable_port, patch_stdstreams=True)
+
+    def get_server_ip(self):
+        """
+        Method get server ip
+        :param arg: None
+        :return:  Find and return ip address of execution server
+        """
+        hostname = socket.gethostname()
+        ip_address = socket.gethostbyname(hostname)
+        return ip_address
+
+    def find_available_port(self):
+        """
+        Method find_available_port
+        :param arg: None
+        :return:  Find and return an available port on the local machine from user defined range 
+        """
+        start_port = 5000
+        end_port = 5999
+        # Iterate over the range of port numbers and try to bind the socket to each port
+        available_port = None
+        for port in range(start_port, end_port):
+            try:
+                # Create a TCP socket and bind it to the current port
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.bind(('0.0.0.0', port))
+                available_port = sock.getsockname()[1]
+                sock.close()
+                break
+            except OSError:
+                # Port is already in use, try the next one
+                pass
+        if available_port == None:
+            self.log.info(f"Failed to bind a port")
+            return None
+        return available_port
+
     def pytest_exception_interact(self, node, call, report):
         '''
         if cafypdb enabled using --cafypdb then on exception or error init Custom pdb class
@@ -1504,11 +1557,15 @@ class EmailReport(object):
         '''
         if self.cafypdb:
             try:
+                #Start the Remote pdb connection using execution server ip and available user port
+                if not self.remote_pdb:
+                    self.remote_pdb =True
+                    self.start_remote_pdb()
                 #Get the traceback object from the excinfo attribute of the call object
                 exc_tb = call.excinfo.tb
                 # Create an instance of Cafy debugger
                 debugger = CafyPdb()
-                #Start the Cafy Debugger
+                #Start the CafyPdb Debugger
                 debugger.post_mortem(exc_tb)
             except Exception as e:
                 self.log.info("Cafy Debugger Promt Failed {}".format(e))

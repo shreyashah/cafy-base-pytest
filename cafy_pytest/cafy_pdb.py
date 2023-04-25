@@ -3,9 +3,6 @@ import os
 import re
 from logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
-from remote_pdb import RemotePdb
-import socket
-import threading
 
 class CafyPdb(pdb.Pdb):
     remote_pdb_started = False
@@ -28,9 +25,6 @@ class CafyPdb(pdb.Pdb):
         """
         #resets the state of the debugger. It clears the list of breakpoints and sets the current frame
         self.reset()
-        #start remote cafypdb connection
-        if CafyPdb.remote_pdb_started == False:
-            self.start_remote_pdb()
         #enter into interactive debugging loop
         self.interaction(None, traceback)
 
@@ -313,63 +307,3 @@ class CafyPdb(pdb.Pdb):
                     connected_devices.append(key)
         print("Connected Devices")
         print(connected_devices)
-
-    def start_remote_pdb(self):
-        """
-        Method start_remote_pdb
-        :param arg: None
-        :return: remote connection
-        """
-        server_ip_address = self.get_server_ip()
-        avilable_port = self.find_available_port()
-        CafyPdb.remote_pdb_started = True
-        self.send_notification(server_ip_address,avilable_port)
-        #calling remote pdb connection 
-        print(server_ip_address)
-        print(avilable_port)
-        RemotePdb('0.0.0.0', avilable_port, patch_stdstreams=True)
-
-    def get_server_ip(self):
-        """
-        Method get server ip
-        :param arg: None
-        :return:  Find and return ip address of execution server
-        """
-        hostname = socket.gethostname()
-        ip_address = socket.gethostbyname(hostname)
-        return ip_address
-
-    def find_available_port(self):
-        """
-        Method find_available_port
-        :param arg: None
-        :return:  Find and return an available port on the local machine from user defined range 
-        """
-        start_port = 5000
-        end_port = 5999
-        # Iterate over the range of port numbers and try to bind the socket to each port
-        available_port = None
-        for port in range(start_port, end_port):
-            try:
-                # Create a TCP socket and bind it to the current port
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.bind(('0.0.0.0', port))
-                available_port = sock.getsockname()[1]
-                sock.close()
-                break
-            except OSError:
-                # Port is already in use, try the next one
-                pass
-        if available_port == None:
-            print(f"Failed to bind a port")
-            return None
-        return available_port
-
-    def send_notification(self, server_ip_address, avilable_port):
-        """
-        Method send_notification
-        :param server_ip_address: server ip address
-        :param avilable_port: port number avialbale for connection
-        :return:  send notification
-        """
-        # YET TO BE IMPLEMENT
