@@ -1,13 +1,15 @@
 import pdb
 import os
 import re
+import sys
 from logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
+from remote_pdb import RemotePdb
 
-class CafyPdb(pdb.Pdb):
-    remote_pdb_started = False
-    def __init__(self, *args, **kwargs):
-        super(CafyPdb, self).__init__(*args, **kwargs)
+
+class CafyPdb(RemotePdb):
+    def __init__(self, host, port,patch_stdstreams=True):
+        super(CafyPdb, self).__init__(host, port,patch_stdstreams=patch_stdstreams)
         self.prompt = "(cafy-pdb)"
         self.topology_file = globals()['CafyLog'].topology_file
         self.testbed_object = globals()['Topology'](self.topology_file)
@@ -16,6 +18,18 @@ class CafyPdb(pdb.Pdb):
             'Router': ['show_routers', 'show_router_info'],
             'Device': ['show_devices', 'show_connected_devices']
         }
+        self.patch_stdstreams = patch_stdstreams
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+
+    def do_quit(self, arg):
+        """
+        Method quit
+        :param arg: arg
+        :return: Exit
+        """
+        # Call the parent class method to quit the debugger
+        super().do_quit(arg)
 
     def post_mortem(self, traceback):
         """
@@ -23,6 +37,12 @@ class CafyPdb(pdb.Pdb):
         :param traceback: tb frame of exception
         :return: start debugger loop
         """
+        pdb_exit_commands = ['q','quit','exit']
+        if self.lastcmd in pdb_exit_commands:
+            return
+        elif self.patch_stdstreams and self.lastcmd not in pdb_exit_commands:
+            sys.stdout = self.stdout
+            sys.stderr = self.stderr
         #resets the state of the debugger. It clears the list of breakpoints and sets the current frame
         self.reset()
         #enter into interactive debugging loop
@@ -40,7 +60,7 @@ class CafyPdb(pdb.Pdb):
                 return pdb.Pdb.do_help(self, arg)
             except AttributeError:
                 pass
-        default_pdb = CafyPdb()
+        default_pdb = dir(CafyPdb)
         default_commands = [method[3:] for method in dir(default_pdb) if method.startswith("do_")]
         # Display the help for all custom commands in categories
         categories = self.custom_commands.keys()
@@ -50,7 +70,6 @@ class CafyPdb(pdb.Pdb):
                 command_buffer.append(command)
                 if command in default_commands:
                     default_commands.remove(command)
-            commands_str = '  '.join(command_buffer)
             print(f"\n{category} commands (type help <topic>):")
             print("==========================================")
             for command in sorted(command_buffer):

@@ -57,8 +57,9 @@ collection_setup = Config()
 CAFY_REPO = os.environ.get("CAFYAP_REPO", None)
 setattr(pytest,"allure",allure)
 from .cafy_pdb import CafyPdb
-from remote_pdb import RemotePdb
 import socket
+
+
 if CAFY_REPO is None:
     #If CAFYAP_REPO is not set, check if GIT_REPO or CAFYKIT_HOME is set
     #If both GIT_REPO and CAFYKIT_HOME are set, CAFYKIT_HOME takes precedence
@@ -569,6 +570,7 @@ def pytest_configure(config):
         reporter.write_line("Registration Id: %s" % CafyLog.registration_id)
 
 
+
 def pytest_unconfigure(config):
     email = getattr(config, '_email', None)
     if email:
@@ -752,6 +754,7 @@ def _setup_archive_env():
 def _setup_env():
     '''setup environment'''
     _setup_archive_env()
+
 
 
 class EmailReport(object):
@@ -1507,9 +1510,9 @@ class EmailReport(object):
         avilable_port = self.find_available_port()
         #ToDo
         #self.send_notification(server_ip_address,avilable_port)
-        self.log.info('Execution Server Ip for Remote Pdb Connection:{}'.format(server_ip_address))
-        self.log.info('Avialable Port for Remote Pdb connection:{}'.format(avilable_port))
-        RemotePdb('0.0.0.0', avilable_port, patch_stdstreams=True)
+        self.log.info('Cafy Debugger: Execution Server Ip for Remote Pdb Connection:{}'.format(server_ip_address))
+        self.log.info('Cafy Debugger: Avialable Port for Remote Pdb connection:{}'.format(avilable_port))
+        self.remote_debugger = CafyPdb('0.0.0.0', avilable_port, patch_stdstreams=True)
 
     def get_server_ip(self):
         """
@@ -1559,16 +1562,20 @@ class EmailReport(object):
             try:
                 #Start the Remote pdb connection using execution server ip and available user port
                 if not self.remote_pdb:
-                    self.remote_pdb =True
+                    self.remote_pdb = True
                     self.start_remote_pdb()
+                    if self.remote_debugger:
+                        self.log.info("Cafy Debugger: RemotePdb Connection Established")
                 #Get the traceback object from the excinfo attribute of the call object
                 exc_tb = call.excinfo.tb
-                # Create an instance of Cafy debugger
-                debugger = CafyPdb()
+                pdb_exit_commands = ['q','quit','exit']
+                if self.remote_debugger.lastcmd in pdb_exit_commands:
+                    self.log.info("Cafy Debugger: RemotePdb Session Ended by user")
+                self.remote_debugger.patch_stdstreams = True
                 #Start the CafyPdb Debugger
-                debugger.post_mortem(exc_tb)
+                self.remote_debugger.post_mortem(exc_tb)
             except Exception as e:
-                self.log.info("Cafy Debugger Promt Failed {}".format(e))
+                self.log.info("Cafy Debugger: Promt Failed {}".format(e))
 
         if report.failed:
             CafyLog().fail(str(call.excinfo))
