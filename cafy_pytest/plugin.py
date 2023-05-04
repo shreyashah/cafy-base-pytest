@@ -1568,12 +1568,12 @@ class EmailReport(object):
                         self.log.info("Cafy Debugger: RemotePdb Connection Established")
                 #Get the traceback object from the excinfo attribute of the call object
                 exc_tb = call.excinfo.tb
-                pdb_exit_commands = ['q','quit','exit']
-                if self.remote_debugger.lastcmd in pdb_exit_commands:
-                    self.log.info("Cafy Debugger: RemotePdb Session Ended by user")
                 self.remote_debugger.patch_stdstreams = True
                 #Start the CafyPdb Debugger
                 self.remote_debugger.post_mortem(exc_tb)
+                pdb_exit_commands = ['q','quit','exit']
+                if self.remote_debugger.lastcmd in pdb_exit_commands:
+                    self.log.info("Cafy Debugger: RemotePdb Session Ended by user")
             except Exception as e:
                 self.log.info("Cafy Debugger: Promt Failed {}".format(e))
 
