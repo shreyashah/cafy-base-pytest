@@ -116,7 +116,7 @@ class CafyPdb(RemotePdb):
         :return: print help
         """
         print("""
-        This command will display the router info.
+        This command require router name as arg and display the router info.
         """)
 
     def do_show_router_info(self,arg=None):
