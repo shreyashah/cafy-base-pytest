@@ -841,6 +841,7 @@ class EmailReport(object):
         self.debug_collector = False
         self.cafypdb = cafypdb
         self.debugger_quit = False
+        self.cafypdb_user_action = ''
 
     def _sendemail(self):
         print("\nSending Summary Email to %s" % self.email_addr_list)
@@ -1630,6 +1631,8 @@ class EmailReport(object):
         '''
         if self.cafypdb:
             try:
+                testcase_name = self.get_test_name(report.nodeid)
+                self.cafypdb_user_action = self.cafypdb_user_action +  f"{testcase_name} : Cafy Debugger Session Started\n"
                 #Start the Remote pdb connection using execution server ip and available user port
                 if self.debugger_quit == False:
                     self.start_remote_pdb()
@@ -1640,11 +1643,13 @@ class EmailReport(object):
                 self.remote_debugger.patch_stdstreams = True
                 #Start the CafyPdb Debugger
                 self.remote_debugger.post_mortem(exc_tb)
+                self.cafypdb_user_action = self.cafypdb_user_action +  f"{self.remote_debugger.user_action}"
                 pdb_exit_commands = ['q','quit','exit']
                 if self.remote_debugger.lastcmd in pdb_exit_commands:
                     self.log.info("Cafy Debugger: RemotePdb Session Ended by user")
                     self.debugger_quit = True
                 self.close_port(self.available_port)
+                self.cafypdb_user_action = self.cafypdb_user_action +  f"{testcase_name} : Cafy Debugger Session Ended\n\n"
             except Exception as e:
                 self.log.info("Cafy Debugger: Promt Failed {}".format(e))
 
@@ -1940,6 +1945,13 @@ class EmailReport(object):
        with open(os.path.join(path, file_name), 'w') as fp:
            json.dump(self.model_coverage_report,fp)
 
+    #method: To collect the cafypdb user actions into a file in work_dir
+    def cafypdb_log(self):
+        path=CafyLog.work_dir
+        file_name = "cafypdb_user_action.log"
+        with open(os.path.join(path, file_name), 'w') as log_file:
+            log_file.write(self.cafypdb_user_action)
+
     def collect_collection_report(self):
         path=CafyLog.work_dir
         if os.path.exists(os.path.join(path, 'model_coverage.json')):
@@ -2000,6 +2012,7 @@ class EmailReport(object):
         terminalreporter.write_line("Results: {work_dir}".format(work_dir=CafyLog.work_dir))
         terminalreporter.write_line("Reports: {allure_html_report}".format(allure_html_report=self.allure_html_report))
         self.collect_collection_report()
+        self.cafypdb_log()
         self._generate_email_report(terminalreporter)
 
         if not self.no_email:

@@ -21,6 +21,7 @@ class CafyPdb(RemotePdb):
         self.patch_stdstreams = patch_stdstreams
         self.stdout = sys.stdout
         self.stderr = sys.stderr
+        self.user_action = ''
 
     def do_quit(self, arg):
         """
@@ -30,6 +31,10 @@ class CafyPdb(RemotePdb):
         """
         # Call the parent class method to quit the debugger
         super().do_quit(arg)
+
+    def postcmd(self, stop, line):
+        self.user_action = self.user_action + f"Cafy Debugger:{line} command executed \n"
+        return super().postcmd(stop, line)
 
     def post_mortem(self, traceback):
         """
