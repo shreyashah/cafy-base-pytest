@@ -57,6 +57,7 @@ collection_setup = Config()
 CAFY_REPO = os.environ.get("CAFYAP_REPO", None)
 setattr(pytest,"allure",allure)
 from .cafy_pdb import CafyPdb
+from .cafypdb_config import CafyPdb_Configs
 import socket
 
 if CAFY_REPO is None:
@@ -1540,6 +1541,30 @@ class EmailReport(object):
                 mail_server.login(self.email_from, self.email_from_passwd)
             mail_server.send_message(msg)
 
+    def send_webex_notification(self,server_ip_address,available_port):
+        '''
+        Method: send_webex_notification
+        :param server_ip_address: server_ip_address
+        :param available_port: port
+        :return: send notification to user for connection on webex
+        '''
+        try:
+            USER = getpass.getuser()
+            API_KEY = CafyPdb_Configs.get_api_key()
+            URL = CafyPdb_Configs.get_webex_url()
+            data = {
+                "user_id":USER,
+                "server_ip":server_ip_address,
+                "port":available_port
+                }
+            data_json = json.dumps(data)
+            headers = {'Content-Type': 'application/json',
+                       'Authorization': 'Bearer {}'.format(API_KEY)}
+            response = requests.post(URL, data=data_json, headers=headers)
+            self.log.info(f"Cafy Debugger: Webex Notification sent for Remote debbugging connection:{response}")
+        except Exception as e:
+            self.log.info(f"Cafy Debugger:Failed to send Webex Notification:{e}")
+
     def send_notification(self,server_ip_address,available_port):
         '''
         Method: send_notification
@@ -1548,6 +1573,7 @@ class EmailReport(object):
         :return: send notification to user for connection on email and webex
         '''
         self.send_email_for_remote_debugging(server_ip_address,available_port)
+        self.send_webex_notification(server_ip_address,available_port)
 
     def start_remote_connection(self,available_port):
         '''
@@ -1948,7 +1974,7 @@ class EmailReport(object):
     #method: To collect the cafypdb user actions into a file in work_dir
     def cafypdb_log(self):
         path=CafyLog.work_dir
-        file_name = "cafypdb_user_action.log"
+        file_name = "cafypdb.log"
         with open(os.path.join(path, file_name), 'w') as log_file:
             log_file.write(self.cafypdb_user_action)
 
