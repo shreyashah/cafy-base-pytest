@@ -1658,7 +1658,7 @@ class EmailReport(object):
         if self.cafypdb:
             try:
                 testcase_name = self.get_test_name(report.nodeid)
-                self.cafypdb_user_action = self.cafypdb_user_action +  f"{testcase_name} : Cafy Debugger Session Started\n"
+                self.cafypdb_user_action = self.cafypdb_user_action +  "***********************************************************\n"+f"{testcase_name} : Cafy Debugger Session Started\n"
                 #Start the Remote pdb connection using execution server ip and available user port
                 if self.debugger_quit == False:
                     self.start_remote_pdb()
@@ -1675,7 +1675,8 @@ class EmailReport(object):
                     self.log.info("Cafy Debugger: RemotePdb Session Ended by user")
                     self.debugger_quit = True
                 self.close_port(self.available_port)
-                self.cafypdb_user_action = self.cafypdb_user_action +  f"{testcase_name} : Cafy Debugger Session Ended\n\n"
+                self.cafypdb_user_action = self.cafypdb_user_action +  f"{testcase_name} : Cafy Debugger Session Ended\n" + "***********************************************************" + "\n\n"
+
             except Exception as e:
                 self.log.info("Cafy Debugger: Promt Failed {}".format(e))
 

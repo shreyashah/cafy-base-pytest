@@ -5,7 +5,36 @@ import sys
 from logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
 from remote_pdb import RemotePdb
+import io
 
+class OutputCapture:
+    def __init__(self):
+        self.stdout = io.StringIO()
+        self.stderr = io.StringIO()
+        self._stdout_orig = sys.stdout
+        self._stderr_orig = sys.stderr
+
+    def start_capture(self):
+        sys.stdout = self._wrap_stream(sys.stdout, self.stdout)
+        sys.stderr = self._wrap_stream(sys.stderr, self.stderr)
+
+    def stop_capture(self):
+        sys.stdout = self._stdout_orig
+        sys.stderr = self._stderr_orig
+
+    def get_captured_output(self):
+        return self.stdout.getvalue() + self.stderr.getvalue()
+
+    @staticmethod
+    def _wrap_stream(stream, capture_buffer):
+        class StreamWrapper:
+            def __init__(self, stream, capture_buffer):
+                self.stream = stream
+                self.capture_buffer = capture_buffer
+            def write(self, text):
+                self.stream.write(text)
+                self.capture_buffer.write(text)
+        return StreamWrapper(stream, capture_buffer)
 
 class CafyPdb(RemotePdb):
     def __init__(self, host, port,patch_stdstreams=True):
@@ -33,25 +62,31 @@ class CafyPdb(RemotePdb):
         super().do_quit(arg)
 
     def postcmd(self, stop, line):
-        self.user_action = self.user_action + f"Cafy Debugger:{line} command executed \n"
+        self.user_action = self.user_action + f"* {line} command executed \n"
+        if line == 'q' or line == 'quit' or line =='exit':
+            self.output_capture.stop_capture()
+        else:
+            self.user_action = self.user_action + f"  Output of {line} command.\n"
+            captured_output = self.output_capture.get_captured_output()
+            self.user_action = self.user_action + f"  {captured_output}\n"
+            self.output_capture = OutputCapture()
+            self.output_capture.start_capture()
         return super().postcmd(stop, line)
 
     def post_mortem(self, traceback):
-        """
-        Method post_mortem
-        :param traceback: tb frame of exception
-        :return: start debugger loop
-        """
-        pdb_exit_commands = ['q','quit','exit']
+        pdb_exit_commands = ['q', 'quit', 'exit']
         if self.lastcmd in pdb_exit_commands:
+            self.user_action = f"  * quit executed\n"
             return
-        elif self.patch_stdstreams and self.lastcmd not in pdb_exit_commands:
+        if self.patch_stdstreams and self.lastcmd not in pdb_exit_commands:
             sys.stdout = self.stdout
             sys.stderr = self.stderr
-        #resets the state of the debugger. It clears the list of breakpoints and sets the current frame
+        # Reset the state of the debugger. It clears the list of breakpoints and sets the current frame
         self.reset()
-        #enter into interactive debugging loop
+        self.output_capture = OutputCapture()
+        self.output_capture.start_capture()
         self.interaction(None, traceback)
+        self.output_capture.stop_capture()
 
     def do_help(self, arg=None):
         """
