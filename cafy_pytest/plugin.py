@@ -1513,11 +1513,11 @@ class EmailReport(object):
         msg_body = f"""
                 <html>
                 <body>
-                <p>CafyPdb remote debugging prompt open for connection.</p>
-                <p>Please connect using below server and port.</p>
+                <p>CafyPdb remote debugging prompt is now available to conenct remotely.</p>
+                <p>You can connect following details:</p>
                 <p>Server IP: {server_ip_address}</p>
                 <p>Port: {available_port}</p>
-                <p>Use below command for connection </p>
+                <p>Use below command for connection:</p>
                 <p>telnet {server_ip_address} {available_port}</p>
                 </body>
                 </html>
@@ -1525,7 +1525,7 @@ class EmailReport(object):
         part = MIMEText(msg_body, 'html')
         part['Content-Disposition'] = "inline"
         msg.attach(part)
-        msg['Subject'] = ("CafyPdb: Remote Debugging")
+        msg['Subject'] = ("CafyPdb: Remote Debugging Details")
         # changing the email_from from cafy-infra@cisco.com to nobody@cisco.com
         self.email_from = "%s@%s" % ("nobody", "cisco.com")
         msg['From'] = self.email_from

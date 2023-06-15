@@ -62,13 +62,14 @@ class CafyPdb(RemotePdb):
         super().do_quit(arg)
 
     def postcmd(self, stop, line):
-        self.user_action = self.user_action + f"* {line} command executed \n"
+        self.user_action = self.user_action + f"> {line} command executed\n"
         if line == 'q' or line == 'quit' or line =='exit':
             self.output_capture.stop_capture()
         else:
-            self.user_action = self.user_action + f"  Output of {line} command.\n"
             captured_output = self.output_capture.get_captured_output()
-            self.user_action = self.user_action + f"  {captured_output}\n"
+            if captured_output:
+                self.user_action = self.user_action + f"Output of {line}:\n"
+                self.user_action = self.user_action + f"  {captured_output}\n"
             self.output_capture = OutputCapture()
             self.output_capture.start_capture()
         return super().postcmd(stop, line)
@@ -111,7 +112,7 @@ class CafyPdb(RemotePdb):
                 if command in default_commands:
                     default_commands.remove(command)
             print(f"\n{category} commands (type help <topic>):")
-            print("==========================================")
+            print("--------------------------------------------")
             for command in sorted(command_buffer):
                 docstring = getattr(CafyPdb, "do_" + command).__doc__
                 if docstring:
