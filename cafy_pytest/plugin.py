@@ -1,6 +1,7 @@
 '''
 This plugin will cover all the cafy related plugin like email report
 '''
+from .plugin_utils import SuppressOutput
 import os
 import sys
 import subprocess
@@ -45,9 +46,10 @@ from email.mime.multipart import MIMEMultipart
 from jinja2 import Template
 
 from logger.cafylog import CafyLog
-from topology.topo_mgr.topo_mgr import Topology
+with SuppressOutput():
+    from topology.topo_mgr.topo_mgr import Topology
+    from debug import DebugLibrary
 from utils.cafyexception  import CafyException
-from debug import DebugLibrary
 import pluggy
 import _pytest
 from utils.collectors.confest import Config
