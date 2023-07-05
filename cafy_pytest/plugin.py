@@ -65,12 +65,11 @@ if CAFY_REPO is None:
     else:
         CAFY_REPO = os.environ.get("GIT_REPO", None)
         if CAFY_REPO:
-            os.environ['CAFY_REPO'] = CAFY_REPO
             if os.path.exists(os.path.join(CAFY_REPO, 'work', 'pytest_cafy_config.yaml')):
+                # CAFY_REPO variable has been set to correct repo.
                 os.environ['CAFY_REPO'] = CAFY_REPO
-                print('GIT_REPO variable has been set to correct repo')
             else:
-                msg = 'GIT_REPO has not been set to correct repo'
+                msg = 'GIT_REPO has not been set to correct repo.'
                 pytest.exit(msg)
 else:
     os.environ['CAFY_REPO'] = CAFY_REPO
@@ -2107,7 +2106,7 @@ class CafyReportData(object):
         self.topo_file = topo_file
         self.run_dir = self.terminalreporter.startdir.strpath
         try:
-            self.git_commit_id = subprocess.check_output(['git', 'rev-parse', 'origin/master'], timeout=5).decode("utf-8").replace('\n', '')
+            self.git_commit_id = subprocess.check_output(['git', 'rev-parse', 'origin/main'], timeout=5, stderr=subprocess.DEVNULL).decode("utf-8").replace('\n', '')
         except Exception:
             self.git_commit_id = None
         self.archive = CafyLog.work_dir
