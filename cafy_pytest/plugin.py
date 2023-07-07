@@ -1,56 +1,53 @@
 '''
 This plugin will cover all the cafy related plugin like email report
 '''
-import os
-import sys
-import subprocess
-import platform
-import smtplib
+
 import getpass
-import time
-import zipfile
-import shutil
-import validators
-import itertools
 import html
-import re
-import requests
-import json
 import inspect
-import yaml
-import pytest
-import allure
+import json
+import os
+import re
+import platform
+import shutil
+import smtplib
+import subprocess
+import sys
+import time
 import traceback
-from .cafy import Cafy
-
-from urllib3 import Retry
-from requests.adapters import HTTPAdapter
-
-from _pytest.terminal import TerminalReporter
-from _pytest.runner import runtestprotocol, TestReport
-#from _pytest.mark import MarkInfo
-
-from pprint import pprint, pformat
-from enum import Enum
-from tabulate import tabulate
-from shutil import copyfile
+import zipfile
+from collections import namedtuple, OrderedDict, defaultdict
 from configparser import ConfigParser
 from datetime import datetime
-from collections import namedtuple, OrderedDict, defaultdict
-from wrapt_timeout_decorator import timeout as wrapt_timeout
-
-from email.utils import COMMASPACE
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from jinja2 import Template
+from email.mime.text import MIMEText
+from email.utils import COMMASPACE
+from enum import Enum
+from shutil import copyfile
 
+import allure
+import pytest
+import requests
+import validators
+import yaml
+import _pytest
+from jinja2 import Template
+from requests.adapters import HTTPAdapter
+from tabulate import tabulate
+from urllib3 import Retry
+from _pytest.terminal import TerminalReporter
+from _pytest.runner import runtestprotocol
+
+# Cafykit imports
+from debug import DebugLibrary
 from logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
-from utils.cafyexception  import CafyException
-from debug import DebugLibrary
-import pluggy
-import _pytest
+from utils.cafyexception import CafyException
 from utils.collectors.confest import Config
+
+from .cafy import Cafy
+
+
 collection_setup = Config()
 #Check with CAFYKIT_HOME or GIT_REPO or CAFYAP_REPO environment is set,
 #if all are set, CAFYAP_REPO takes precedence
