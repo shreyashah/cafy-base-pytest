@@ -1149,24 +1149,20 @@ class EmailReport(object):
     def get_status(self,mode):
         try:
             running_mode=mode.split('.')[0].lower()
-            status=''
-            flag=False
-            for v in self.mode_list:
-                if v in running_mode:
-                    status=v
-                    flag=True
-                    break
-            if not(flag):
-                if hasattr(CafyLog,"hybrid_mode_dict") and CafyLog.hybrid_mode_dict.get('mode',None)=='oc':
-                    status = 'oc'
-                elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='cli':
-                    status = 'cli'
-                elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='ydk':
-                    status = 'ydk'
-                elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='hybrid_ydk':
-                    status = 'ydk'
-                elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='hybrid_oc':
-                    status = 'oc'
+            for _mode in self.mode_list:
+                if running_mode.endswith(_mode):
+                    return _mode
+            status = ''
+            if hasattr(CafyLog,"hybrid_mode_dict") and CafyLog.hybrid_mode_dict.get('mode',None)=='oc':
+                status = 'oc'
+            elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='cli':
+                status = 'cli'
+            elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='ydk':
+                status = 'ydk'
+            elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='hybrid_ydk':
+                status = 'ydk'
+            elif hasattr(CafyLog,"hybrid_mode_dict") and  CafyLog.hybrid_mode_dict.get('mode',None)=='hybrid_oc':
+                status = 'oc'
             return status
         except Exception as e:
             return e
@@ -1200,7 +1196,7 @@ class EmailReport(object):
     """
     def get_method(self):
         method_list=[]
-        if hasattr(CafyLog,"hybrid_mode_dict") and CafyLog.hybrid_mode_dict.get('cls',None):
+        if hasattr(CafyLog,"hybrid_mode_dict") and CafyLog.hybrid_mode_dict.get('cls'):
             for cls in CafyLog.hybrid_mode_dict['cls']:
                 for name, method in inspect.getmembers(cls, inspect.isfunction):
                     try:
@@ -1372,8 +1368,12 @@ class EmailReport(object):
             mode_list=self.get_mode(method_list)
             final_status=self.get_final_status(mode_list)
             self.hybrid_mode_status_dict[testcase_name]=final_status
-            for item in range(0,len(method_list)):
-                method_mode_dict[str(method_list[item].__name__)]=mode_list[item]
+            for item in range(len(method_list)):
+                method = method_list[item]
+                module = method.__module__
+                if module not in method_mode_dict:
+                    method_mode_dict[module] = {}
+                method_mode_dict[module][method.__name__] = mode_list[item]
             self.report_dump[testcase_name]={}
             self.report_dump[testcase_name]['method_mode']=method_mode_dict
             self.report_dump[testcase_name]['final_status']=final_status
