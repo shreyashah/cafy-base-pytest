@@ -10,6 +10,7 @@ setup(
     name="cafy_pytest",
     packages=['cafy_pytest'],
     package_data={'cafy_pytest': ['resources/*']},
+    author='Cafy',
     version=__version__,
     url='https://github.com/cafykit/cafy-pytest',
     description='Pytest Cafy Plugin', 	
