@@ -18,6 +18,7 @@ setup(
         'jinja2',
         'pytest>=2.3',
         'PyYAML',
+        'remote-pdb',
         'requests',
         'tabulate',
         'urllib3',

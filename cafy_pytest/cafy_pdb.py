@@ -1,11 +1,15 @@
-import pdb
+import io
 import os
+import pdb
 import re
 import sys
+
+from remote_pdb import RemotePdb
+
+# Cafykit imports
 from logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
-from remote_pdb import RemotePdb
-import io
+
 
 class OutputCapture:
     def __init__(self):
@@ -40,8 +44,8 @@ class CafyPdb(RemotePdb):
     def __init__(self, host, port,patch_stdstreams=True):
         super(CafyPdb, self).__init__(host, port,patch_stdstreams=patch_stdstreams)
         self.prompt = "(cafy-pdb)"
-        self.topology_file = globals()['CafyLog'].topology_file
-        self.testbed_object = globals()['Topology'](self.topology_file)
+        self.topology_file = CafyLog.topology_file
+        self.testbed_object = Topology(self.topology_file)
         self.custom_commands = {
             'Local': ['show_locals','feature_lib_locals'],
             'Router': ['show_routers', 'show_router_info'],

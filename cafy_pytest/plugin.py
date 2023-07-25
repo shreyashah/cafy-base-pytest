@@ -10,7 +10,9 @@ import os
 import re
 import platform
 import shutil
+import signal
 import smtplib
+import socket
 import subprocess
 import sys
 import time
@@ -46,6 +48,8 @@ from utils.cafyexception import CafyException
 from utils.collectors.confest import Config
 
 from .cafy import Cafy
+from .cafy_pdb import CafyPdb
+from .cafypdb_config import CafyPdb_Configs
 
 
 collection_setup = Config()
@@ -53,10 +57,6 @@ collection_setup = Config()
 #if all are set, CAFYAP_REPO takes precedence
 CAFY_REPO = os.environ.get("CAFYAP_REPO", None)
 setattr(pytest,"allure",allure)
-from .cafy_pdb import CafyPdb
-from .cafypdb_config import CafyPdb_Configs
-import socket
-import signal
 
 if CAFY_REPO is None:
     #If CAFYAP_REPO is not set, check if GIT_REPO or CAFYKIT_HOME is set
