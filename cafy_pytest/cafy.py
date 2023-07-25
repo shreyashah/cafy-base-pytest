@@ -2,9 +2,13 @@
 Cafy Placeholder class for pytest integeration
 """
 
-from allure_commons._allure import StepContext as AllureStepContext
 import pytest
+from allure_commons._allure import StepContext as AllureStepContext
+
+# Cafykit imports
 from utils.cafyexception import CafyException
+
+
 class Cafy:
 
     class Globals: 
