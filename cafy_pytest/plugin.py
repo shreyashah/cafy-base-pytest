@@ -1502,31 +1502,32 @@ class EmailReport(object):
         self.check_call_report(item, nextitem)
         return True
 
-    def send_email_for_remote_debugging(self,server_ip_address,available_port):
+    def send_email_for_remote_debugging(self,server_ip_address,available_port, run_id='local_run'):
         '''
         Method send_email_for_remote_debugging
         :param server_ip_address: server_ip_address
         :param available_port: available_port
+        :param run_id: run_id , default=local_run for local runs
         :return: send server ip and port info as email notification
         '''
-        self.log.info("\nSending Email Notification for CafyPdb debugging Connection to %s" % self.email_addr_list)
+        self.log.info(f"Sending email notification for CafyPdb debugging connection for {run_id} to {self.email_addr_list}")
         msg = MIMEMultipart()
         msg_body = f"""
                 <html>
                 <body>
-                <p>CafyPdb remote debugging prompt is now available to conenct remotely.</p>
-                <p>You can connect following details:</p>
-                <p>Server IP: {server_ip_address}</p>
-                <p>Port: {available_port}</p>
-                <p>Use below command for connection:</p>
-                <p>telnet {server_ip_address} {available_port}</p>
+                <p>CafyPdb remote debugging prompt for {run_id} is now available to connect remotely.</p>
+                <p>Connection details: <br>
+                Server_ip: {server_ip_address}, Port: {available_port} </p>
+                <p>Use below telnet command to connect remotely: <br>
+                telnet {server_ip_address} {available_port}</p>
+                <p> Learn more about CafyPdb here: <a href="http://cafy-web-sjc1/pages/Cafykit/Develop/cafypdb">CafyPdb Documentation</a></p>
                 </body>
                 </html>
                 """
         part = MIMEText(msg_body, 'html')
         part['Content-Disposition'] = "inline"
         msg.attach(part)
-        msg['Subject'] = ("CafyPdb: Remote Debugging Details")
+        msg['Subject'] = (f"CafyPdb remote debugging details for run_id: {run_id}")
         # changing the email_from from cafy-infra@cisco.com to nobody@cisco.com
         self.email_from = "%s@%s" % ("nobody", "cisco.com")
         msg['From'] = self.email_from
@@ -1550,7 +1551,7 @@ class EmailReport(object):
         :return: send notification to user for connection on webex
         '''
         try:
-            USER = getpass.getuser()
+            USER = os.environ.get("CAFY_USER",getpass.getuser())
             API_KEY = CafyPdb_Configs.get_api_key()
             URL = CafyPdb_Configs.get_webex_url()
             data = {
@@ -1562,18 +1563,18 @@ class EmailReport(object):
             headers = {'Content-Type': 'application/json',
                        'Authorization': 'Bearer {}'.format(API_KEY)}
             response = requests.post(URL, data=data_json, headers=headers)
-            self.log.info(f"Cafy Debugger: Webex Notification sent for Remote debbugging connection:{response}")
+            self.log.info(f"Cafy Debugger: Webex notification sent for remote debbugging connection:{response}")
         except Exception as e:
-            self.log.info(f"Cafy Debugger:Failed to send Webex Notification:{e}")
+            self.log.info(f"Cafy Debugger:Failed to send webex notification:{e}")
 
-    def send_notification(self,server_ip_address,available_port):
+    def send_notification(self,server_ip_address,available_port, run_id):
         '''
         Method: send_notification
         :param server_ip_address: server_ip_address
         :param available_port: port
         :return: send notification to user for connection on email and webex
         '''
-        self.send_email_for_remote_debugging(server_ip_address,available_port)
+        self.send_email_for_remote_debugging(server_ip_address,available_port, run_id)
         self.send_webex_notification(server_ip_address,available_port)
 
     def start_remote_connection(self,available_port):
@@ -1582,7 +1583,8 @@ class EmailReport(object):
         :param: available_port
         :return: open remote connection
         '''
-        self.send_notification(self.server_ip_address,available_port)
+        run_id = os.environ.get("CAFY_RUN_ID", 'local_run')
+        self.send_notification(self.server_ip_address,available_port,run_id)
         self.log.info(f"Cafy Debugger: Execution Server IP for Remote Pdb Connection: {self.server_ip_address}, and Available Port: {available_port}")
         #Handle time out if user do not connect in specified time in sec
         timeout = CafyPdb_Configs.get_connection_timeout()
