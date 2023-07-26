@@ -1515,9 +1515,9 @@ class EmailReport(object):
         msg_body = f"""
                 <html>
                 <body>
-                <p>CafyPdb remote debugging prompt for {run_id} is now available to conenct remotely.</p>
+                <p>CafyPdb remote debugging prompt for {run_id} is now available to connect remotely.</p>
                 <p>Connection details: <br>
-                Server_ip: {server_ip_address} Port: {available_port} </p>
+                Server_ip: {server_ip_address}, Port: {available_port} </p>
                 <p>Use below telnet command to connect remotely: <br>
                 telnet {server_ip_address} {available_port}</p>
                 <p> Learn more about CafyPdb here: <a href="http://cafy-web-sjc1/pages/Cafykit/Develop/cafypdb">CafyPdb Documentation</a></p>
