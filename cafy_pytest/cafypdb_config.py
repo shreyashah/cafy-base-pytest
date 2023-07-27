@@ -2,6 +2,7 @@ class CafyPdb_Configs:
     Webex_Notification_Url = 'https://cafy3.cisco.com:3500/api/notifications/sns/cafypdb'
     API_KEY = 'f912594816b83760756f3cfdcb32f08bdf3f9b6fe46183323ec0aaf0e4afe25b '
     connection_timeout = 7200
+    doc_link = 'http://cafy-web-sjc1/pages/Cafykit/Develop/cafypdb'
    
     @staticmethod
     def get_webex_url():
@@ -23,4 +24,11 @@ class CafyPdb_Configs:
         return connection time out in sec(2hr = 7200 sec)
         """
         return CafyPdb_Configs.connection_timeout
+
+    @staticmethod
+    def get_cafypdb_doc():
+        """
+        return cafypdb documentaion
+        """
+        return CafyPdb_Configs.doc_link
 

@@ -1512,6 +1512,7 @@ class EmailReport(object):
         '''
         self.log.info(f"Sending email notification for CafyPdb debugging connection for {run_id} to {self.email_addr_list}")
         msg = MIMEMultipart()
+        doc_link = CafyPdb_Configs.get_cafypdb_doc()
         msg_body = f"""
                 <html>
                 <body>
@@ -1520,7 +1521,7 @@ class EmailReport(object):
                 Server_ip: {server_ip_address}, Port: {available_port} </p>
                 <p>Use below telnet command to connect remotely: <br>
                 telnet {server_ip_address} {available_port}</p>
-                <p> Learn more about CafyPdb here: <a href="http://cafy-web-sjc1/pages/Cafykit/Develop/cafypdb">CafyPdb Documentation</a></p>
+                <p> Learn more about CafyPdb here: <a href={doc_link}>CafyPdb Documentation</a></p>
                 </body>
                 </html>
                 """
@@ -1543,21 +1544,25 @@ class EmailReport(object):
                 mail_server.login(self.email_from, self.email_from_passwd)
             mail_server.send_message(msg)
 
-    def send_webex_notification(self,server_ip_address,available_port):
+    def send_webex_notification(self,server_ip_address,available_port, run_id='local_run'):
         '''
         Method: send_webex_notification
         :param server_ip_address: server_ip_address
         :param available_port: port
+        :param run_id: run id
         :return: send notification to user for connection on webex
         '''
         try:
             USER = os.environ.get("CAFY_USER",getpass.getuser())
             API_KEY = CafyPdb_Configs.get_api_key()
             URL = CafyPdb_Configs.get_webex_url()
+            doc_link = CafyPdb_Configs.get_cafypdb_doc()
             data = {
                 "user_id":USER,
                 "server_ip":server_ip_address,
-                "port":available_port
+                "port":available_port,
+                "run_id":run_id,
+                "doc_link":doc_link
                 }
             data_json = json.dumps(data)
             headers = {'Content-Type': 'application/json',
@@ -1575,7 +1580,7 @@ class EmailReport(object):
         :return: send notification to user for connection on email and webex
         '''
         self.send_email_for_remote_debugging(server_ip_address,available_port, run_id)
-        self.send_webex_notification(server_ip_address,available_port)
+        self.send_webex_notification(server_ip_address,available_port, run_id)
 
     def start_remote_connection(self,available_port):
         '''
