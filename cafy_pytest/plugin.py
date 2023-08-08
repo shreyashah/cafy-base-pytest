@@ -1680,7 +1680,7 @@ class EmailReport(object):
                 #Start the Remote pdb connection using execution server ip and available user port
                 if self.debugger_quit == False:
                     self.start_remote_pdb()
-                    if self.remote_debugger:
+                    if hasattr(self, 'remote_debugger'):
                         self.log.info("Cafy Debugger: RemotePdb Connection Established")
                         #Get the traceback object from the excinfo attribute of the call object
                         exc_tb = call.excinfo.tb
