@@ -41,7 +41,7 @@ from _pytest.terminal import TerminalReporter
 from _pytest.runner import runtestprotocol
 
 # Cafykit imports
-from logger.cafylog import CafyLog
+from cafykit.logger.cafylog import CafyLog
 from topology.topo_mgr.topo_mgr import Topology
 from utils.cafyexception import CafyException
 
@@ -2275,10 +2275,6 @@ class CafyReportData(object):
             CafyLog.email_htmlfile_link = file_link
         else:
             print('\n Email html report not generated')
-
-
-
-
 
         if CafyLog.email_htmlfile_link:
             self.summary_report = CafyLog.email_htmlfile_link
